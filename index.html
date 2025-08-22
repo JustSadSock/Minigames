@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>DeepFly — мини‑игры</title>
+  <!--
+    Это стартовая страница игрового хаба.  Она не требует сборки или внешних
+    библиотек и может быть открыта напрямую из файловой системы.  Основная
+    логика написана внизу в виде ES‑модуля.  Игры подключаются динамически
+    через ссылку вида #game=&lt;slug&gt; и располагаются в папке games/.
+  -->
+  <style>
+    :root{
+      /* Базовая цветовая палитра.  Все переменные легко
+         перекрашиваются — достаточно сменить значения здесь. */
+      --bg:#0d0f17;
+      --panel:#111422;
+      --grid-even:#1a1d2c;
+      --grid-odd:#171a29;
+      --border:#1b1e2e;
+      --highlight:#272a3b;
+      --ink:#d7defd;
+      --muted:#8c92b8;
+      --p1:#ff5ca8;
+      --p2:#68c7ff;
+      --radius:12px;
+      --shadow:0 8px 24px rgba(0,0,0,.35);
+    }
+
+    html,body{height:100%;margin:0;color:var(--ink);background:var(--bg);
+      font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+    }
+    *{box-sizing:border-box;}
+    body{display:flex;flex-direction:column;overflow-y:auto;}
+    header,footer{
+      padding:8px 16px;
+      background:var(--panel);
+      border-bottom:1px solid var(--border);
+      color:var(--ink);
+      display:flex;align-items:center;gap:16px;
+    }
+    header h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.5px;}
+    header .spacer{flex:1;}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    /* Кнопки с четырьмя состояниями: idle, hover, active, disabled */
+    .btn{
+      --bg1: #222642;
+      --bg2: #191c30;
+      --border1: #2a2e49;
+      --border2: #191c30;
+      --text: #e6ebff;
+      appearance:none;border:0;cursor:pointer;
+      padding:6px 10px;font-weight:700;font-size:12px;border-radius:10px;
+      color:var(--text);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.06), transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      box-shadow: inset 0 -2px 0 0 rgba(0,0,0,.4), 0 6px 0 0 rgba(0,0,0,.2), 0 10px 16px rgba(0,0,0,.3);
+      transition: transform .05s ease, filter .15s ease;
+      position:relative;
+    }
+    .btn::after{
+      content:""; position:absolute; inset:0;border-radius:10px;
+      box-shadow: inset 0 0 0 1px var(--border1), inset 0 0 0 2px var(--border2);
+      pointer-events:none;
+    }
+    .btn:hover{filter:saturate(1.3);}
+    .btn:active{transform:translateY(2px); box-shadow: inset 0 -1px 0 0 rgba(0,0,0,.45), 0 4px 0 0 rgba(0,0,0,.2), 0 8px 12px rgba(0,0,0,.3);}    
+    .btn[disabled]{opacity:.5;cursor:not-allowed;filter:grayscale(.6) saturate(.5);}
+    .p1{--bg1:#ff6bb5;--bg2:#c43e7a;--text:#fff;}
+    .p2{--bg1:#7ad6ff;--bg2:#2a97d8;--text:#fff;}
+    .ghost{--bg1:#1a1d31;--bg2:#0f1223;--text:#aeb6e9;}
+
+    main{flex:1;display:grid;grid-template-columns:1fr minmax(260px, 72vh) 1fr; gap:16px; padding:16px; align-items:flex-start;}
+    .side{display:grid;gap:16px;max-width:380px;width:100%;}
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:12px;
+      box-shadow:var(--shadow);
+    }
+    .avatar{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;}
+    .avatar .name{font-weight:700;color:#e9edff;font-size:14px;margin-bottom:4px;}
+    .avatar .stats{font-size:12px;color:var(--muted);}    
+    .pixel{image-rendering: pixelated; image-rendering: crisp-edges;}
+    /* Сцена-превью */
+    .scene{
+      position:relative;
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:100%;aspect-ratio:1/1;
+    }
+    .scene canvas{width:96%;height:96%;border-radius:var(--radius);}
+    .hud{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);}
+    .tag{padding:4px 8px;border-radius:999px;background:#14172a;border:1px solid #232742;}
+    @media(max-width:860px){
+      main{grid-template-columns:1fr;grid-template-rows:auto auto auto;max-width:720px;margin:0 auto;}
+      .side{max-width:none;}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>DeepFly — мини‑игры</h1>
+    <div class="spacer"></div>
+    <div class="row">
+      <button class="btn ghost" id="themeToggle">Тема</button>
+      <a href="#game=pong" class="btn p1">Pong</a>
+      <a href="#game=runner" class="btn p2">Runner</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Левая колонка: профиль и настройки -->
+    <section class="side">
+      <div class="panel avatar">
+        <canvas id="avatar1" class="pixel" width="64" height="64" style="width:64px;height:64px;"></canvas>
+        <div>
+          <div class="name" id="playerName">Игрок</div>
+          <div class="stats" id="playerStats">готов • ♥ 3 • ★ 0</div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn p1" id="profileSave">Сохранить</button>
+            <button class="btn ghost" id="profileReset">Сброс</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="row">
+          <button class="btn ghost" id="muteBtn">Звук</button>
+          <button class="btn ghost" id="vfxBtn">Эффекты</button>
+        </div>
+      </div>
+    </section>
+    <!-- Сцена: здесь будет игра -->
+    <section class="scene panel" id="scenePanel">
+      <canvas id="preview" class="pixel" width="192" height="192"></canvas>
+    </section>
+    <!-- Правая колонка: информация и HUD -->
+    <section class="side">
+      <div class="panel avatar">
+        <canvas id="avatar2" class="pixel" width="64" height="64" style="width:64px;height:64px;"></canvas>
+        <div>
+          <div class="name" id="player2Name">Гость</div>
+          <div class="stats" id="player2Stats">в сети • ♥ 3 • ★ 0</div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn p2" id="inviteBtn">Пригласить</button>
+            <button class="btn ghost" id="skinBtn">Скин</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel hud">
+        <span class="tag">v1.0.0</span>
+        <span class="fps" id="fps">FPS –</span>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <small style="color:var(--muted)">Навигация: используйте ссылки в шапке или хэш <code>#game=&lt;slug&gt;</code> в адресной строке, чтобы запустить игру. Игра загружается по требованию и не тормозит хаб.</small>
+  </footer>
+
+  <script type="module">
+  /*
+    Базовый SPA‑хаб: рисует превью (сетку, курсор, частицы), управляет темой,
+    хранит настройки, загружает игровые модули и передаёт им контекст.
+    Каждая игра экспортирует manifest + mount/unmount, живёт в games/<slug>/.
+  */
+  const HUB_VERSION = '1.0.0';
+
+  const $ = (sel) => document.querySelector(sel);
+
+  // Простая тема: dark и alternative
+  const theme = {
+    current: 'dark',
+    apply(name){
+      theme.current = name;
+      if(name === 'alt'){
+        document.documentElement.style.setProperty('--bg','#141b2e');
+        document.documentElement.style.setProperty('--panel','#1c233c');
+        document.documentElement.style.setProperty('--grid-even','#202745');
+        document.documentElement.style.setProperty('--grid-odd','#1d2341');
+        document.documentElement.style.setProperty('--border','#252e50');
+        document.documentElement.style.setProperty('--ink','#ccd9ff');
+        document.documentElement.style.setProperty('--muted','#8fa1c7');
+      } else {
+        document.documentElement.style.setProperty('--bg','#0d0f17');
+        document.documentElement.style.setProperty('--panel','#111422');
+        document.documentElement.style.setProperty('--grid-even','#1a1d2c');
+        document.documentElement.style.setProperty('--grid-odd','#171a29');
+        document.documentElement.style.setProperty('--border','#1b1e2e');
+        document.documentElement.style.setProperty('--ink','#d7defd');
+        document.documentElement.style.setProperty('--muted','#8c92b8');
+      }
+    },
+    toggle(){ theme.apply(theme.current==='dark' ? 'alt' : 'dark'); }
+  };
+  $('#themeToggle').onclick = () => theme.toggle();
+
+  // Примитивный шина событий
+  const bus = new EventTarget();
+
+  // хранилище настроек/прогресса (IndexedDB можно добавить позже)
+  const store = {
+    prefix:'deepfly.',
+    get(key, def){ try{ const v = localStorage.getItem(this.prefix+key); return v ? JSON.parse(v) : def; }catch(_){ return def; } },
+    set(key,val){ localStorage.setItem(this.prefix+key, JSON.stringify(val)); },
+    del(key){ localStorage.removeItem(this.prefix+key); }
+  };
+
+  // Мини‑тост
+  function flash(text){
+    const el = document.createElement('div');
+    el.textContent = text;
+    el.style.cssText = `position:fixed;left:50%;top:20px;transform:translateX(-50%);background:#1e2244;border:1px solid #2c325a;color:#e6ebff;padding:8px 12px;border-radius:10px;box-shadow:${getComputedStyle(document.documentElement).getPropertyValue('--shadow')};font-size:12px;z-index:999;opacity:0;transition:opacity .2s ease`;
+    document.body.appendChild(el);
+    requestAnimationFrame(()=>{ el.style.opacity='1'; });
+    setTimeout(()=>{ el.style.opacity='0'; }, 2200);
+    setTimeout(()=>{ el.remove(); }, 2600);
+  }
+
+  // Автономный мини‑превью на главной (сеточная арена, курсоры, частицы)
+  const previewCanvas = $('#preview');
+  const pctx = previewCanvas.getContext('2d', { alpha:false });
+  pctx.imageSmoothingEnabled = false;
+  const PREVIEW_W = 192, PREVIEW_H = 192;
+  const GRID = 12;
+  const previewState = {
+    t:0,
+    cursors:[
+      { x: Math.floor(GRID*0.7), y: Math.floor(GRID*0.4), frame:0, color: '#ff77bd' },
+      { x: Math.floor(GRID*0.3), y: Math.floor(GRID*0.7), frame:0, color: '#68c7ff' }
+    ],
+    particles:[]
+  };
+  function rnd(n){ return Math.random()*n; }
+  function spawn(x,y,color){
+    for(let i=0;i<5;i++){
+      previewState.particles.push({ x, y, vx:(Math.random()-.5)*.6, vy:(Math.random()-.5)*.6 - .2, life:20+Math.random()*20, age:0, color });
+    }
+  }
+  previewCanvas.addEventListener('pointerdown', e=>{
+    const rect = previewCanvas.getBoundingClientRect();
+    const sx = (e.clientX-rect.left)/rect.width;
+    const sy = (e.clientY-rect.top)/rect.height;
+    const gx = Math.max(0, Math.min(GRID-1, Math.floor(sx*GRID)));
+    const gy = Math.max(0, Math.min(GRID-1, Math.floor(sy*GRID)));
+    previewState.cursors[0].x = gx; previewState.cursors[0].y = gy; previewState.cursors[0].frame = 0;
+    spawn(gx*16+8, gy*16+8, '#ff77bd');
+  });
+  function drawPreviewGrid(){
+    for(let y=0;y<GRID;y++){
+      for(let x=0;x<GRID;x++){
+        pctx.fillStyle = (x+y)%2 ? getComputedStyle(document.documentElement).getPropertyValue('--grid-even') : getComputedStyle(document.documentElement).getPropertyValue('--grid-odd');
+        pctx.fillRect(x*16,y*16,16,16);
+      }
+    }
+    pctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border');
+    pctx.lineWidth = 1;
+    pctx.strokeRect(0.5,0.5,PREVIEW_W-1,PREVIEW_H-1);
+  }
+  function drawPreviewCursor(c){
+    const frames = [2,3,4,5];
+    const r = frames[Math.floor(c.frame)%frames.length];
+    const cx = c.x*16+8; const cy = c.y*16+8;
+    pctx.strokeStyle = c.color; pctx.lineWidth = 1;
+    pctx.beginPath(); pctx.arc(cx, cy, r, 0, Math.PI*2); pctx.stroke();
+    pctx.beginPath(); pctx.arc(cx, cy, Math.max(1,r-2), 0, Math.PI*2); pctx.stroke();
+  }
+  function drawPreviewParticles(){
+    for(let i=previewState.particles.length-1;i>=0;i--){
+      const p = previewState.particles[i]; p.age++;
+      p.x += p.vx; p.y += p.vy; p.vy += 0.02;
+      const a = Math.max(0, 1 - p.age/p.life);
+      if(p.age>p.life){ previewState.particles.splice(i,1); continue; }
+      pctx.fillStyle = p.color; pctx.globalAlpha = a;
+      pctx.fillRect(p.x-1,p.y-1,2,2);
+      pctx.globalAlpha = 1;
+    }
+  }
+  let fpsCounter=0, fpsLast=performance.now();
+  function previewLoop(){
+    const now = performance.now(); fpsCounter++;
+    if(now - fpsLast > 500){
+      const fps = Math.round(fpsCounter*1000/(now-fpsLast));
+      $('#fps').textContent = `FPS ${fps}`;
+      fpsCounter=0; fpsLast = now;
+    }
+    previewState.t++;
+    drawPreviewGrid();
+    previewState.cursors.forEach(c => { c.frame += 0.25; drawPreviewCursor(c); });
+    if(previewState.t % 12 === 0){
+      previewState.cursors.forEach(c => spawn(c.x*16+8, c.y*16+8, c.color));
+    }
+    drawPreviewParticles();
+    requestAnimationFrame(previewLoop);
+  }
+  drawPreviewGrid(); previewLoop();
+
+  // Примитивные аватары (3 кадра idle + мигание)
+  function makeAvatar(canvas, tint = '#ff5ca8'){
+    const ac = canvas.getContext('2d'); ac.imageSmoothingEnabled = false;
+    const W=16, H=16, SCALE=4;
+    const frames = [
+      (t)=>{ drawSprite(ac,W,H,SCALE,tint, 0, 0, 0); },
+      (t)=>{ drawSprite(ac,W,H,SCALE,tint, 0, -1, 0); },
+      (t)=>{ drawSprite(ac,W,H,SCALE,tint, 0, 0, (t%5===0)?1:0); }
+    ];
+    let f=0, tick=0;
+    function step(){
+      tick++;
+      if(tick%30===0) f=(f+1)%frames.length;
+      frames[f](tick);
+      requestAnimationFrame(step);
+    }
+    step();
+  }
+  function px(ctx,x,y,s,color){ ctx.fillStyle=color; ctx.fillRect(x*s,y*s,s,s); }
+  function drawSprite(ctx,W,H,S,tint,dx,dy,blink){
+    const skin='#f4d7b5'; const hair=tint; const shirt='#2a2f54'; const eye='#10131e';
+    ctx.clearRect(0,0,W*S,H*S);
+    // тело
+    px(ctx,7+dx,12+dy,S,shirt); px(ctx,8+dx,12+dy,S,shirt);
+    px(ctx,7+dx,11+dy,S,shirt); px(ctx,8+dx,11+dy,S,shirt);
+    // голова
+    for(let i=5;i<=10;i++) px(ctx,i+dx,7+dy,S,skin);
+    for(let i=6;i<=9;i++) px(ctx,i+dx,6+dy,S,skin);
+    // волосы
+    for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair);
+    px(ctx,5+dx,6+dy,S,hair); px(ctx,10+dx,6+dy,S,hair);
+    // глаза
+    if(!blink){ px(ctx,6+dx,7+dy,S,eye); px(ctx,9+dx,7+dy,S,eye); }
+    else { px(ctx,6+dx,8+dy,S,eye); px(ctx,9+dx,8+dy,S,eye); }
+    // тень
+    ctx.globalAlpha=.12; ctx.fillStyle='#000'; ctx.fillRect(0,(dy?S:0),W*S,2*S); ctx.globalAlpha=1;
+  }
+  makeAvatar($('#avatar1'), '#ff5ca8');
+  makeAvatar($('#avatar2'), '#68c7ff');
+
+  /*
+    Встроенные версии игр.  Чтобы обеспечить работу при открытии файла
+    напрямую (file://) без сервера, мы дублируем реализацию модулей
+    Pong и Runner прямо здесь.  Когда сайт работает по HTTP, эти
+    встроенные версии не нужны — хаб пытается загрузить игры из
+    каталога games/<slug>/module.js и использует их.  Но если загрузка
+    через <script src> завершилась неудачей (например, из-за
+    ограничений браузера на file://), встраиваемые варианты спасают.
+  */
+  const games = {
+    pong: {
+      manifest: { slug:'pong', name:'Pong', version:'1.0.0', players:2 },
+      async mount(root, context) {
+        // реализация аналогична games/pong/module.js
+        const container = document.createElement('div');
+        container.className = 'game-pong';
+        container.style.position = 'relative';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        root.innerHTML = '';
+        root.appendChild(container);
+        const canvas = document.createElement('canvas');
+        canvas.width = 160;
+        canvas.height = 100;
+        canvas.className = 'pixel';
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        container.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        const scoreEl = document.createElement('div');
+        scoreEl.style.position = 'absolute';
+        scoreEl.style.top = '6px';
+        scoreEl.style.left = '50%';
+        scoreEl.style.transform = 'translateX(-50%)';
+        scoreEl.style.color = getComputedStyle(document.documentElement).getPropertyValue('--ink');
+        scoreEl.style.font = '14px ui-monospace';
+        scoreEl.style.userSelect = 'none';
+        container.appendChild(scoreEl);
+        const backBtn = document.createElement('button');
+        backBtn.textContent = 'Назад';
+        backBtn.className = 'btn ghost';
+        backBtn.style.position = 'absolute';
+        backBtn.style.bottom = '8px';
+        backBtn.style.left = '8px';
+        backBtn.onclick = () => { location.hash = ''; };
+        container.appendChild(backBtn);
+        const width = canvas.width;
+        const height = canvas.height;
+        const paddleW = 2;
+        const paddleH = 16;
+        const ballSize = 2;
+        let p1 = { y: height/2 - paddleH/2, score: 0 };
+        let p2 = { y: height/2 - paddleH/2, score: 0 };
+        let ball = { x: width/2, y: height/2, vx: 1.8, vy: 1.2 };
+        let running = true;
+        let pointerY = null;
+        const keys = {};
+        function onPointer(e){ const rect=canvas.getBoundingClientRect(); const sy=(e.clientY-rect.top)/rect.height; pointerY = sy*height; }
+        canvas.addEventListener('pointermove', onPointer);
+        canvas.addEventListener('pointerdown', onPointer);
+        function onKeyDown(e){ keys[e.key.toLowerCase()] = true; }
+        function onKeyUp(e){ keys[e.key.toLowerCase()] = false; }
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
+        function resetBall(){ ball.x = width/2; ball.y = height/2; ball.vx = (Math.random()>0.5?1:-1)*1.8; ball.vy = (Math.random()-0.5)*2; }
+        function update(){
+          if(pointerY !== null){ const target = pointerY - paddleH/2; p1.y += (target - p1.y)*0.2; }
+          else{ if(keys['w']) p1.y -= 2; if(keys['s']) p1.y += 2; }
+          if(keys['arrowup'] || keys['arrowdown']){ if(keys['arrowup']) p2.y -= 2; if(keys['arrowdown']) p2.y += 2; }
+          else{ const target = ball.y - paddleH/2; p2.y += (target - p2.y)*0.05; }
+          p1.y = Math.max(0, Math.min(height - paddleH, p1.y)); p2.y = Math.max(0, Math.min(height - paddleH, p2.y));
+          ball.x += ball.vx; ball.y += ball.vy;
+          if(ball.y <= 0 || ball.y >= height - ballSize){ ball.vy *= -1; ball.y = Math.max(0, Math.min(height-ballSize, ball.y)); }
+          if(ball.x <= paddleW && ball.y + ballSize > p1.y && ball.y < p1.y + paddleH){ ball.vx = Math.abs(ball.vx); const impact=(ball.y+ballSize/2-(p1.y+paddleH/2))/(paddleH/2); ball.vy = impact*1.5; }
+          if(ball.x + ballSize >= width - paddleW && ball.y + ballSize > p2.y && ball.y < p2.y + paddleH){ ball.vx = -Math.abs(ball.vx); const impact=(ball.y+ballSize/2-(p2.y+paddleH/2))/(paddleH/2); ball.vy = impact*1.5; }
+          if(ball.x < -ballSize){ p2.score++; resetBall(); }
+          if(ball.x > width + ballSize){ p1.score++; resetBall(); }
+        }
+        function render(){
+          const odd = getComputedStyle(document.documentElement).getPropertyValue('--grid-odd').trim();
+          const even = getComputedStyle(document.documentElement).getPropertyValue('--grid-even').trim();
+          for(let y=0; y<height; y+=16){ for(let x=0; x<width; x+=16){ ctx.fillStyle = ((x+y)/16 % 2 === 0) ? odd : even; ctx.fillRect(x,y,16,16); } }
+          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--highlight'); for(let y=0;y<height;y+=6) ctx.fillRect(width/2-1,y,2,3);
+          ctx.fillStyle = '#ff77bd'; ctx.fillRect(0,p1.y,paddleW,paddleH);
+          ctx.fillStyle = '#68c7ff'; ctx.fillRect(width-paddleW,p2.y,paddleW,paddleH);
+          ctx.fillStyle = '#ffd166'; ctx.fillRect(ball.x, ball.y, ballSize, ballSize);
+          scoreEl.textContent = `${p1.score} : ${p2.score}`;
+        }
+        let animId;
+        function loop(){ update(); render(); animId = requestAnimationFrame(loop); }
+        loop();
+        return { unmount(){ cancelAnimationFrame(animId); canvas.removeEventListener('pointermove', onPointer); canvas.removeEventListener('pointerdown', onPointer); window.removeEventListener('keydown', onKeyDown); window.removeEventListener('keyup', onKeyUp); if(container.parentNode===root) root.removeChild(container); } };
+      }
+    },
+    runner: {
+      manifest: { slug:'runner', name:'Runner', version:'1.0.0', players:1 },
+      async mount(root, context){
+        const container = document.createElement('div');
+        container.className = 'game-runner'; container.style.position = 'relative'; container.style.width='100%'; container.style.height='100%'; root.innerHTML=''; root.appendChild(container);
+        const canvas = document.createElement('canvas'); canvas.width=160; canvas.height=90; canvas.className='pixel'; canvas.style.width='100%'; canvas.style.height='100%'; container.appendChild(canvas);
+        const ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled=false;
+        const scoreEl = document.createElement('div'); scoreEl.style.position='absolute'; scoreEl.style.top='6px'; scoreEl.style.left='8px'; scoreEl.style.color=getComputedStyle(document.documentElement).getPropertyValue('--ink'); scoreEl.style.font='14px ui-monospace'; scoreEl.style.userSelect='none'; container.appendChild(scoreEl);
+        const backBtn = document.createElement('button'); backBtn.textContent='Назад'; backBtn.className='btn ghost'; backBtn.style.position='absolute'; backBtn.style.bottom='8px'; backBtn.style.left='8px'; backBtn.onclick=() => { location.hash=''; }; container.appendChild(backBtn);
+        const width = canvas.width; const height = canvas.height; const groundY = height - 10; const gravity=0.2;
+        const player = { x:20, y: groundY - 8, vy:0, w:8, h:8, jumping:false };
+        let obstacles = []; let spawnTimer=0; let score=0; let running=true; let gameOver=false;
+        function resetGame(){ player.y=groundY-player.h; player.vy=0; player.jumping=false; obstacles=[]; spawnTimer=0; score=0; gameOver=false; running=true; }
+        function jump(){ if(!player.jumping && !gameOver){ player.vy = -4.2; player.jumping = true; } if(gameOver){ resetGame(); } }
+        function onPointer(e){ e.preventDefault(); jump(); } function onKey(e){ if(e.key === ' '){ e.preventDefault(); jump(); } }
+        canvas.addEventListener('pointerdown', onPointer); window.addEventListener('keydown', onKey);
+        function update(){ if(!running) return; player.vy += gravity; player.y += player.vy; if(player.y >= groundY-player.h){ player.y = groundY-player.h; player.vy=0; player.jumping=false; } spawnTimer--; if(spawnTimer <= 0){ const obsH = 12 + Math.floor(Math.random()*10); obstacles.push({ x: width, y: groundY - obsH, w:6, h:obsH }); spawnTimer = 80 + Math.random()*60; } for(let i=obstacles.length-1; i>=0; i--){ const o=obstacles[i]; o.x -= 1.8; if(!gameOver && o.x < player.x + player.w && o.x + o.w > player.x && o.y < player.y + player.h && o.y + o.h > player.y){ gameOver = true; running=false; } if(o.x + o.w < 0){ obstacles.splice(i,1); if(!gameOver) score++; } } }
+        function drawPlayer(){ const px=(x,y,s,c)=>{ ctx.fillStyle=c; ctx.fillRect(x*s,y*s,s,s); }; const s=1; const offX=Math.floor(player.x); const offY=Math.floor(player.y); // тело
+          px(offX+1, offY+3, s, '#ff77bd'); px(offX+2, offY+3, s, '#ff77bd'); px(offX+1, offY+4, s, '#ff77bd'); px(offX+2, offY+4, s, '#ff77bd'); px(offX+1, offY+5, s, '#ff77bd'); px(offX+2, offY+5, s, '#ff77bd'); // голова
+          px(offX+1, offY+1, s, '#ffd166'); px(offX+2, offY+1, s, '#ffd166'); px(offX+1, offY+2, s, '#ffd166'); px(offX+2, offY+2, s, '#ffd166'); // глаза
+          px(offX+1, offY+2, s, '#10131e'); px(offX+2, offY+2, s, '#10131e'); }
+        function render(){ const odd=getComputedStyle(document.documentElement).getPropertyValue('--grid-odd').trim(); const even=getComputedStyle(document.documentElement).getPropertyValue('--grid-even').trim(); for(let y=0;y<height;y+=16){ for(let x=0;x<width;x+=16){ ctx.fillStyle = ((x+y)/16 % 2 === 0) ? odd : even; ctx.fillRect(x,y,16,16); } } ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--highlight'); ctx.fillRect(0, groundY, width, 1); drawPlayer(); ctx.fillStyle='#ff6b6b'; obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h)); scoreEl.textContent = gameOver ? `Game Over — счет: ${score}` : `Очки: ${score}`; }
+        let animId; function loop(){ update(); render(); animId = requestAnimationFrame(loop); } loop();
+        return { unmount(){ running=false; cancelAnimationFrame(animId); canvas.removeEventListener('pointerdown', onPointer); window.removeEventListener('keydown', onKey); if(container.parentNode===root) root.removeChild(container); } };
+      }
+    }
+  };
+
+  // Роутинг: загрузка игрового модуля по хэшу без dynamic import
+  let currentGame = null;
+  async function loadGameModule(slug) {
+    // Если модуль уже зарегистрирован, возвращаем его
+    if(window.__DeepFlyGames && window.__DeepFlyGames[slug]) {
+      return window.__DeepFlyGames[slug];
+    }
+    // Иначе создаём тег script и загружаем файл
+    // Если открыто из файловой системы (file://), браузер не позволит
+    // подключать соседние .js файлы как скрипты.  В этом режиме сразу
+    // возвращаем встроенную игру, если она есть.
+    if (location.protocol === 'file:' && games && games[slug]) {
+      return games[slug];
+    }
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = `./games/${slug}/module.js`;
+      // Успешная загрузка: проверяем, зарегистрирован ли модуль
+      script.onload = () => {
+        if (window.__DeepFlyGames && window.__DeepFlyGames[slug]) {
+          resolve(window.__DeepFlyGames[slug]);
+        } else if (games && games[slug]) {
+          // Файл загружен, но модуль не зарегистрировался: используем встроенную игру
+          resolve(games[slug]);
+        } else {
+          // Нет ни внешнего, ни встроенного модуля
+          reject(new Error(`Модуль ${slug} не зарегистрирован`));
+        }
+      };
+      // Ошибка загрузки: пытаемся использовать встроенный вариант
+      script.onerror = () => {
+        // Удаляем тег, чтобы не засорять head
+        if (script.parentNode) script.parentNode.removeChild(script);
+        if (games && games[slug]) {
+          resolve(games[slug]);
+        } else {
+          reject(new Error(`Не удалось загрузить файл games/${slug}/module.js`));
+        }
+      };
+      document.head.appendChild(script);
+    });
+  }
+  async function loadFromHash(){
+    const m = location.hash.match(/game=([\w-]+)/);
+    if(!m){
+      if(currentGame && currentGame.unmount) currentGame.unmount();
+      currentGame = null;
+      $('#preview').style.display='block';
+      return;
+    }
+    const slug = m[1];
+    try {
+      let mod;
+      // Всегда сначала пробуем встроенную игру.  Это гарантирует
+      // работу из локальной файловой системы, где загрузка внешних
+      // модулей запрещена.  Если встроенного варианта нет, пытаемся
+      // загрузить модуль из каталога games/<slug>/.
+      if (games && games[slug]) {
+        mod = games[slug];
+      } else {
+        mod = await loadGameModule(slug);
+      }
+      if(currentGame && currentGame.unmount) currentGame.unmount();
+      currentGame = await mod.mount($('#scenePanel'), getContext());
+      $('#preview').style.display='none';
+    } catch(err) {
+      console.error(err);
+      flash(`Не удалось загрузить игру «${slug}». Убедитесь, что папка games/${slug}/module.js существует.`);
+      if(currentGame && currentGame.unmount) currentGame.unmount();
+      currentGame = null;
+      $('#preview').style.display='block';
+    }
+  }
+  window.addEventListener('hashchange', loadFromHash);
+  loadFromHash();
+  
+  // Контекст, передаваемый в игры
+  function getContext(){
+    return {
+      version: HUB_VERSION,
+      bus,
+      theme,
+      store,
+      ui:{ flash },
+      input: {
+        // упрощённый ввод: подписка на клавиши
+        on(type, handler){ window.addEventListener(type, handler); },
+        off(type, handler){ window.removeEventListener(type, handler); }
+      },
+      net:{ rest: async ()=>{ throw new Error('REST не настроен'); }, rt:{ connect:()=>({ publish(){}, subscribe(){}, close(){} }) } },
+      root: $('#scenePanel')
+    };
+  }
+
+  // Демозаглушки
+  $('#muteBtn').onclick = () => flash('Звук: функция в разработке');
+  $('#vfxBtn').onclick  = () => flash('Эффекты: функция в разработке');
+  $('#profileSave').onclick = () => {
+    const name = prompt('Введите имя игрока:', $('#playerName').textContent);
+    if(name){ $('#playerName').textContent = name; store.set('account.name', name); }
+  };
+  $('#profileReset').onclick = () => {
+    store.del('account.name'); $('#playerName').textContent = 'Игрок'; flash('Профиль сброшен');
+  };
+  // загрузка сохранённого имени
+  const savedName = store.get('account.name', null);
+  if(savedName) $('#playerName').textContent = savedName;
+
+  </script>
+</body>
+</html>
