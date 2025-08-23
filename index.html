@@ -128,9 +128,9 @@
     <h1>DeepFly — мини‑игры</h1>
     <div class="spacer"></div>
     <div class="row">
-      <button class="btn ghost" id="themeToggle">Тема</button>
-      <button class="btn ghost" id="openSettings">Настройки</button>
-      <button class="btn ghost" id="openAvatar">Аватар</button>
+      <canvas id="btnGames" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
+      <canvas id="btnSettings" class="pixel" width="80" height="20" style="width:80px;height:20px;"></canvas>
+      <canvas id="btnAvatar" class="pixel" width="80" height="20" style="width:80px;height:20px;"></canvas>
     </div>
   </header>
 
@@ -143,8 +143,8 @@
           <div class="name" id="playerName">Игрок</div>
           <div class="stats" id="playerStats">готов • ♥ 3 • ★ 0</div>
           <div class="row" style="margin-top:8px">
-            <button class="btn p1" id="profileSave">Профиль</button>
-            <button class="btn ghost" id="profileReset">Сброс</button>
+            <canvas id="profileSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
+            <canvas id="profileReset" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
           </div>
         </div>
       </div>
@@ -164,8 +164,8 @@
           <div class="name" id="player2Name">Гость</div>
           <div class="stats" id="player2Stats">в сети • ♥ 3 • ★ 0</div>
           <div class="row" style="margin-top:8px">
-            <button class="btn p2" id="inviteBtn">Пригласить</button>
-            <button class="btn ghost" id="skinBtn">Скин</button>
+            <canvas id="inviteBtn" class="pixel" width="80" height="20" style="width:80px;height:20px;"></canvas>
+            <canvas id="skinBtn" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
           </div>
         </div>
       </div>
@@ -181,45 +181,45 @@
 
   <div id="settingsDialog" class="backdrop hidden">
     <div id="settingsPanel" class="dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-      <button class="btn ghost" id="settingsClose" aria-label="Закрыть" style="position:absolute;top:8px;right:8px">×</button>
+      <canvas id="settingsClose" class="pixel" width="16" height="16" style="position:absolute;top:8px;right:8px;width:16px;height:16px;"></canvas>
       <h2 id="settingsTitle">Настройки</h2>
       <label><input type="checkbox" id="muteToggle"> Звук</label><br>
       <label><input type="checkbox" id="vfxToggle"> Эффекты</label><br>
       <label><input type="checkbox" id="themeAltToggle"> Альт. тема</label><br>
       <div class="row" style="margin-top:8px;">
-        <button class="btn p1" id="settingsSave">Сохранить</button>
-        <button class="btn ghost" id="settingsCancel">Отмена</button>
+        <canvas id="settingsSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
+        <canvas id="settingsCancel" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
       </div>
     </div>
   </div>
 
   <div id="avatarDialog" class="backdrop hidden">
     <div id="avatarPanel" class="dialog" role="dialog" aria-modal="true" aria-labelledby="avatarTitle">
-      <button class="btn ghost" id="avatarClose" aria-label="Закрыть" style="position:absolute;top:8px;right:8px">×</button>
+      <canvas id="avatarClose" class="pixel" width="16" height="16" style="position:absolute;top:8px;right:8px;width:16px;height:16px;"></canvas>
       <h2 id="avatarTitle">Профиль</h2>
       <input id="nickInput" placeholder="Никнейм" style="font-size:16px;padding:4px;width:100%;margin-bottom:8px;" />
       <canvas id="avatarEdit" class="pixel" width="64" height="64" style="width:64px;height:64px;margin-bottom:8px;"></canvas>
       <div class="row" id="avatarControls" style="gap:6px;flex-wrap:wrap">
         <div><small>Прическа</small><br>
-          <button class="btn ghost" id="hairPrev" aria-label="Предыдущая прическа">◀</button>
-          <button class="btn ghost" id="hairNext" aria-label="Следующая прическа">▶</button>
+          <canvas id="hairPrev" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
+          <canvas id="hairNext" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
         </div>
         <div><small>Глаза</small><br>
-          <button class="btn ghost" id="eyesPrev" aria-label="Предыдущие глаза">◀</button>
-          <button class="btn ghost" id="eyesNext" aria-label="Следующие глаза">▶</button>
+          <canvas id="eyesPrev" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
+          <canvas id="eyesNext" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
         </div>
         <div><small>Рот</small><br>
-          <button class="btn ghost" id="mouthPrev" aria-label="Предыдущий рот">◀</button>
-          <button class="btn ghost" id="mouthNext" aria-label="Следующий рот">▶</button>
+          <canvas id="mouthPrev" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
+          <canvas id="mouthNext" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
         </div>
         <div><small>Цвет волос</small><br>
-          <button class="btn ghost" id="colorPrev" aria-label="Предыдущий цвет">◀</button>
-          <button class="btn ghost" id="colorNext" aria-label="Следующий цвет">▶</button>
+          <canvas id="colorPrev" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
+          <canvas id="colorNext" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
         </div>
       </div>
       <div class="row" style="margin-top:8px;">
-        <button class="btn p1" id="avatarSave">Сохранить</button>
-        <button class="btn ghost" id="avatarCancel">Отмена</button>
+        <canvas id="avatarSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
+        <canvas id="avatarCancel" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
       </div>
     </div>
   </div>
@@ -233,6 +233,34 @@
   const HUB_VERSION = '1.0.0';
 
   const $ = (sel) => document.querySelector(sel);
+
+  // Универсальная канвас-кнопка
+  function makeCanvasButton(canvas, { label, onClick, fontPx=10, width=canvas.width, height=canvas.height }){
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    canvas.width = width; canvas.height = height;
+    let st = 0; let enabled = true;
+    function draw(){
+      const bg = ['#1a1d31','#232742','#0f1223'][st];
+      ctx.clearRect(0,0,width,height);
+      ctx.fillStyle = bg; ctx.fillRect(0,0,width,height);
+      ctx.strokeStyle = '#000'; ctx.strokeRect(0.5,0.5,width-1,height-1);
+      ctx.fillStyle = enabled ? '#e6ebff' : '#8c92b8';
+      ctx.font = `${fontPx}px ui-monospace`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, width/2, height/2+1);
+    }
+    function setEnabled(v){ enabled = !!v; draw(); }
+    function setLabel(v){ label = v; canvas.setAttribute('aria-label', v); draw(); }
+    canvas.tabIndex = 0; canvas.setAttribute('role','button'); canvas.setAttribute('aria-label', label);
+    canvas.addEventListener('pointerenter',()=>{ if(enabled){ st=1; draw(); } });
+    canvas.addEventListener('pointerleave',()=>{ if(enabled){ st=0; draw(); } });
+    canvas.addEventListener('pointerdown',e=>{ if(enabled){ e.preventDefault(); st=2; draw(); } });
+    canvas.addEventListener('pointerup',()=>{ if(enabled){ st=1; draw(); onClick && onClick(); } });
+    canvas.addEventListener('keydown',e=>{ if(enabled && (e.key==='Enter'||e.key===' ')){ onClick && onClick(); } });
+    draw();
+    return { setEnabled, setLabel };
+  }
 
   // Простая тема: dark и alternative
   const theme = {
@@ -261,7 +289,6 @@
     },
     toggle(){ const next = theme.current==='dark' ? 'alt' : 'dark'; theme.apply(next); return next; }
   };
-  $('#themeToggle').onclick = () => { const t = theme.toggle(); settings.theme = t; store.set('settings.theme', t); $('#themeAltToggle').checked = (t==='alt'); };
 
   // Примитивный шина событий
   const bus = new EventTarget();
@@ -431,19 +458,23 @@
     for(let i=6;i<=9;i++) px(ctx,i+dx,6+dy,S,skin);
     px(ctx,6+dx,8+dy,S,skin); px(ctx,9+dx,8+dy,S,skin);
     // рот
-    if(parts.mouthStyle===0){ px(ctx,7+dx,9+dy,S,mouth); px(ctx,8+dx,9+dy,S,mouth); }
-    if(parts.mouthStyle===1){ px(ctx,7+dx,9+dy,S,mouth); }
-    if(parts.mouthStyle===2){ px(ctx,7+dx,9+dy,S,mouth); px(ctx,8+dx,9+dy,S,mouth); px(ctx,7+dx,10+dy,S,mouth); px(ctx,8+dx,10+dy,S,mouth); }
+    if(parts.mouth===0){ px(ctx,7+dx,9+dy,S,mouth); px(ctx,8+dx,9+dy,S,mouth); }
+    if(parts.mouth===1){ px(ctx,7+dx,9+dy,S,mouth); }
+    if(parts.mouth===2){ px(ctx,7+dx,9+dy,S,mouth); px(ctx,8+dx,9+dy,S,mouth); px(ctx,7+dx,10+dy,S,mouth); px(ctx,8+dx,10+dy,S,mouth); }
+    if(parts.mouth===3){ px(ctx,7+dx,10+dy,S,mouth); px(ctx,8+dx,10+dy,S,mouth); }
     // глаза
-    if(parts.eyesStyle===0){ px(ctx,6+dx+eyeDx,7+dy,S,eye); px(ctx,9+dx+eyeDx,7+dy,S,eye); }
-    if(parts.eyesStyle===1){ px(ctx,6+dx+eyeDx,7+dy,S,eye); }
-    if(parts.eyesStyle===2){ px(ctx,6+dx+eyeDx,7+dy,S,eye); px(ctx,9+dx+eyeDx,7+dy,S,eye); px(ctx,7+dx,7+dy,S,eye); }
+    if(parts.eyes===0){ px(ctx,6+dx+eyeDx,7+dy,S,eye); px(ctx,9+dx+eyeDx,7+dy,S,eye); }
+    if(parts.eyes===1){ px(ctx,6+dx+eyeDx,7+dy,S,eye); }
+    if(parts.eyes===2){ px(ctx,6+dx+eyeDx,7+dy,S,eye); px(ctx,9+dx+eyeDx,7+dy,S,eye); px(ctx,7+dx,7+dy,S,eye); }
+    if(parts.eyes===3){ px(ctx,6+dx+eyeDx,7+dy,S,eye); px(ctx,6+dx+eyeDx,8+dy,S,eye); px(ctx,9+dx+eyeDx,7+dy,S,eye); px(ctx,9+dx+eyeDx,8+dy,S,eye); }
     // волосы
     const hair = hairPalette[parts.hairColor%hairPalette.length];
     if(parts.hairStyle===0){ for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,5+dx,6+dy,S,hair); px(ctx,10+dx,6+dy,S,hair); }
     if(parts.hairStyle===1){ for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,5+dx,6+dy,S,hair); px(ctx,6+dx,6+dy,S,hair); }
     if(parts.hairStyle===2){ for(let i=6;i<=9;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,5+dx,6+dy,S,hair); px(ctx,10+dx,6+dy,S,hair); }
     if(parts.hairStyle===3){ for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,7+dx,4+dy,S,hair); }
+    if(parts.hairStyle===4){ for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,5+dx,6+dy,S,hair); px(ctx,5+dx,7+dy,S,hair); }
+    if(parts.hairStyle===5){ for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,5+dx,6+dy,S,hair); px(ctx,10+dx,6+dy,S,hair); px(ctx,5+dx,7+dy,S,hair); px(ctx,10+dx,7+dy,S,hair); }
     ctx.globalAlpha=.12; ctx.fillStyle='#000'; ctx.fillRect(0,(dy?S:0),W*S,2*S); ctx.globalAlpha=1;
   }
   function makeAvatar(canvas, parts){
@@ -455,9 +486,9 @@
     step();
     return { setParts(p){ cur={...cur,...p}; }, destroy(){ canvas.removeEventListener('pointermove', onMove); } };
   }
-  const hairPalette = ['#ff5ca8','#68c7ff','#ffd166','#7aff9e'];
-  const avatar1 = makeAvatar($('#avatar1'), {hairStyle:0,eyesStyle:0,mouthStyle:0,hairColor:0});
-  const avatar2 = makeAvatar($('#avatar2'), {hairStyle:0,eyesStyle:0,mouthStyle:0,hairColor:1});
+  const hairPalette = ['#ff5ca8','#68c7ff','#ffd166','#7aff9e','#c29eff','#ff8c42'];
+  const avatar1 = makeAvatar($('#avatar1'), {hairStyle:0,eyes:0,mouth:0,hairColor:0});
+  const avatar2 = makeAvatar($('#avatar2'), {hairStyle:0,eyes:0,mouth:0,hairColor:1});
 
   /*
     Встроенные версии игр.  Чтобы обеспечить работу при открытии файла
@@ -505,14 +536,11 @@
         scoreEl.style.font = '14px ui-monospace';
         scoreEl.style.userSelect = 'none';
         container.appendChild(scoreEl);
-        const backBtn = document.createElement('button');
-        backBtn.textContent = 'Назад';
-        backBtn.className = 'btn ghost';
-        backBtn.style.position = 'absolute';
-        backBtn.style.bottom = '8px';
-        backBtn.style.left = '8px';
-        backBtn.onclick = () => { location.hash = ''; };
-        container.appendChild(backBtn);
+        const backCv=document.createElement('canvas');
+        backCv.className='pixel'; backCv.width=64; backCv.height=16;
+        backCv.style.position='absolute'; backCv.style.bottom='8px'; backCv.style.left='8px';
+        container.appendChild(backCv);
+        makeCanvasButton(backCv,{label:'Назад',onClick(){ location.hash=''; }});
         const width = canvas.width;
         const height = canvas.height;
         const paddleW = 2;
@@ -572,7 +600,7 @@
         const ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled=false;
         const ro = new ResizeObserver(()=>{ const w=container.clientWidth,h=container.clientHeight; const scale=Math.max(1,Math.floor(Math.min(w/canvas.width,h/canvas.height))); canvas.style.width=canvas.width*scale+'px'; canvas.style.height=canvas.height*scale+'px'; }); ro.observe(container);
         const scoreEl = document.createElement('div'); scoreEl.style.position='absolute'; scoreEl.style.top='6px'; scoreEl.style.left='8px'; scoreEl.style.color=getComputedStyle(document.documentElement).getPropertyValue('--ink'); scoreEl.style.font='14px ui-monospace'; scoreEl.style.userSelect='none'; container.appendChild(scoreEl);
-        const backBtn = document.createElement('button'); backBtn.textContent='Назад'; backBtn.className='btn ghost'; backBtn.style.position='absolute'; backBtn.style.bottom='8px'; backBtn.style.left='8px'; backBtn.onclick=() => { location.hash=''; }; container.appendChild(backBtn);
+        const backCv=document.createElement('canvas'); backCv.className='pixel'; backCv.width=64; backCv.height=16; backCv.style.position='absolute'; backCv.style.bottom='8px'; backCv.style.left='8px'; container.appendChild(backCv); makeCanvasButton(backCv,{label:'Назад',onClick(){ location.hash=''; }});
         const width = canvas.width; const height = canvas.height; const groundY = height - 10; const gravity=0.2;
         const player = { x:20, y: groundY - 8, vy:0, w:8, h:8, jumping:false };
         let obstacles = []; let spawnTimer=0; let score=0; let running=true; let gameOver=false;
@@ -699,50 +727,58 @@
   let profile = {
     id: store.get('profile.id', Date.now()),
     nickname: store.get('profile.nickname','Игрок'),
-    hairStyle: store.get('profile.hairStyle',0),
-    eyesStyle: store.get('profile.eyesStyle',0),
-    mouthStyle: store.get('profile.mouthStyle',0),
-    hairColor: store.get('profile.hairColor',0)
+    avatar: store.get('profile.avatar',{hairStyle:0,eyes:0,mouth:0,hairColor:0})
   };
   store.set('profile.id', profile.id);
   $('#playerName').textContent = profile.nickname;
-  avatar1.setParts(profile);
-  const avatarEdit = makeAvatar($('#avatarEdit'), profile);
+  avatar1.setParts(profile.avatar);
+  avatar2.setParts(profile.avatar);
+  const avatarEdit = makeAvatar($('#avatarEdit'), profile.avatar);
 
   let avatarDlg=null;
   function openAvatarPanel(opener){
     $('#nickInput').value = profile.nickname;
-    avatarEdit.setParts(profile);
+    avatarEdit.setParts(profile.avatar);
     avatarDlg = openDialog('#avatarDialog', opener);
   }
   const clamp=(v,min,max)=>(v<min?max:(v>max?min:v));
-  $('#hairPrev').onclick = ()=>{ profile.hairStyle = clamp(profile.hairStyle-1,0,3); avatarEdit.setParts(profile); };
-  $('#hairNext').onclick = ()=>{ profile.hairStyle = clamp(profile.hairStyle+1,0,3); avatarEdit.setParts(profile); };
-  $('#eyesPrev').onclick = ()=>{ profile.eyesStyle = clamp(profile.eyesStyle-1,0,2); avatarEdit.setParts(profile); };
-  $('#eyesNext').onclick = ()=>{ profile.eyesStyle = clamp(profile.eyesStyle+1,0,2); avatarEdit.setParts(profile); };
-  $('#mouthPrev').onclick = ()=>{ profile.mouthStyle = clamp(profile.mouthStyle-1,0,2); avatarEdit.setParts(profile); };
-  $('#mouthNext').onclick = ()=>{ profile.mouthStyle = clamp(profile.mouthStyle+1,0,2); avatarEdit.setParts(profile); };
-  $('#colorPrev').onclick = ()=>{ profile.hairColor = clamp(profile.hairColor-1,0,hairPalette.length-1); avatarEdit.setParts(profile); };
-  $('#colorNext').onclick = ()=>{ profile.hairColor = clamp(profile.hairColor+1,0,hairPalette.length-1); avatarEdit.setParts(profile); };
+  const HAIR_STYLES=6, EYE_STYLES=4, MOUTH_STYLES=4;
+  makeCanvasButton($('#hairPrev'),{label:'◀',onClick(){ profile.avatar.hairStyle = clamp(profile.avatar.hairStyle-1,0,HAIR_STYLES-1); avatarEdit.setParts(profile.avatar); }});
+  $('#hairPrev').setAttribute('aria-label','Предыдущая прическа');
+  makeCanvasButton($('#hairNext'),{label:'▶',onClick(){ profile.avatar.hairStyle = clamp(profile.avatar.hairStyle+1,0,HAIR_STYLES-1); avatarEdit.setParts(profile.avatar); }});
+  $('#hairNext').setAttribute('aria-label','Следующая прическа');
+  makeCanvasButton($('#eyesPrev'),{label:'◀',onClick(){ profile.avatar.eyes = clamp(profile.avatar.eyes-1,0,EYE_STYLES-1); avatarEdit.setParts(profile.avatar); }});
+  $('#eyesPrev').setAttribute('aria-label','Предыдущие глаза');
+  makeCanvasButton($('#eyesNext'),{label:'▶',onClick(){ profile.avatar.eyes = clamp(profile.avatar.eyes+1,0,EYE_STYLES-1); avatarEdit.setParts(profile.avatar); }});
+  $('#eyesNext').setAttribute('aria-label','Следующие глаза');
+  makeCanvasButton($('#mouthPrev'),{label:'◀',onClick(){ profile.avatar.mouth = clamp(profile.avatar.mouth-1,0,MOUTH_STYLES-1); avatarEdit.setParts(profile.avatar); }});
+  $('#mouthPrev').setAttribute('aria-label','Предыдущий рот');
+  makeCanvasButton($('#mouthNext'),{label:'▶',onClick(){ profile.avatar.mouth = clamp(profile.avatar.mouth+1,0,MOUTH_STYLES-1); avatarEdit.setParts(profile.avatar); }});
+  $('#mouthNext').setAttribute('aria-label','Следующий рот');
+  makeCanvasButton($('#colorPrev'),{label:'◀',onClick(){ profile.avatar.hairColor = clamp(profile.avatar.hairColor-1,0,hairPalette.length-1); avatarEdit.setParts(profile.avatar); }});
+  $('#colorPrev').setAttribute('aria-label','Предыдущий цвет');
+  makeCanvasButton($('#colorNext'),{label:'▶',onClick(){ profile.avatar.hairColor = clamp(profile.avatar.hairColor+1,0,hairPalette.length-1); avatarEdit.setParts(profile.avatar); }});
+  $('#colorNext').setAttribute('aria-label','Следующий цвет');
   function saveProfile(){
     profile.nickname = $('#nickInput').value.trim() || 'Игрок';
     store.set('profile.nickname', profile.nickname);
-    store.set('profile.hairStyle', profile.hairStyle);
-    store.set('profile.eyesStyle', profile.eyesStyle);
-    store.set('profile.mouthStyle', profile.mouthStyle);
-    store.set('profile.hairColor', profile.hairColor);
+    store.set('profile.avatar', profile.avatar);
     $('#playerName').textContent = profile.nickname;
-    avatar1.setParts(profile);
+    avatar1.setParts(profile.avatar);
+    avatar2.setParts(profile.avatar);
   }
-  $('#profileSave').onclick = ()=> openAvatarPanel($('#profileSave'));
-  $('#avatarSave').onclick = ()=>{ saveProfile(); avatarDlg && avatarDlg.close(); };
-  $('#avatarCancel').onclick = ()=>{ avatarDlg && avatarDlg.close(); };
-  $('#avatarClose').onclick = ()=>{ avatarDlg && avatarDlg.close(); };
-  $('#profileReset').onclick = ()=>{
-    store.del('profile.nickname'); store.del('profile.hairStyle'); store.del('profile.eyesStyle'); store.del('profile.mouthStyle'); store.del('profile.hairColor');
-    profile = { id: profile.id, nickname:'Игрок', hairStyle:0, eyesStyle:0, mouthStyle:0, hairColor:0 };
-    $('#playerName').textContent = profile.nickname; avatar1.setParts(profile);
-  };
+  makeCanvasButton($('#profileSave'),{label:'Профиль',onClick(){ openAvatarPanel($('#profileSave')); }});
+  makeCanvasButton($('#avatarSave'),{label:'Сохранить',onClick(){ saveProfile(); avatarDlg && avatarDlg.close(); }});
+  makeCanvasButton($('#avatarCancel'),{label:'Отмена',onClick(){ avatarDlg && avatarDlg.close(); }});
+  makeCanvasButton($('#avatarClose'),{label:'×',onClick(){ avatarDlg && avatarDlg.close(); }});
+  $('#avatarClose').setAttribute('aria-label','Закрыть');
+  makeCanvasButton($('#profileReset'),{label:'Сброс',onClick(){
+    store.del('profile.nickname'); store.del('profile.avatar');
+    profile = { id: profile.id, nickname:'Игрок', avatar:{hairStyle:0,eyes:0,mouth:0,hairColor:0} };
+    $('#playerName').textContent = profile.nickname; avatar1.setParts(profile.avatar); avatar2.setParts(profile.avatar);
+  }});
+  makeCanvasButton($('#inviteBtn'),{label:'Пригласить',onClick(){}});
+  makeCanvasButton($('#skinBtn'),{label:'Скин',onClick(){ openAvatarPanel($('#skinBtn')); }});
 
   // Настройки
   settings.mute = store.get('settings.mute', false);
@@ -753,7 +789,7 @@
   $('#vfxToggle').checked = settings.vfx;
   $('#themeAltToggle').checked = settings.theme==='alt';
   let settingsDlg=null;
-  $('#settingsSave').onclick = ()=>{
+  makeCanvasButton($('#settingsSave'),{label:'Сохранить',onClick(){
     settings.mute = $('#muteToggle').checked;
     settings.vfx = $('#vfxToggle').checked;
     settings.theme = $('#themeAltToggle').checked ? 'alt' : 'dark';
@@ -762,9 +798,10 @@
     store.set('settings.theme', settings.theme);
     theme.apply(settings.theme);
     settingsDlg && settingsDlg.close();
-  };
-  $('#settingsCancel').onclick = ()=>{ settingsDlg && settingsDlg.close(); };
-  $('#settingsClose').onclick = ()=>{ settingsDlg && settingsDlg.close(); };
+  }});
+  makeCanvasButton($('#settingsCancel'),{label:'Отмена',onClick(){ settingsDlg && settingsDlg.close(); }});
+  makeCanvasButton($('#settingsClose'),{label:'×',onClick(){ settingsDlg && settingsDlg.close(); }});
+  $('#settingsClose').setAttribute('aria-label','Закрыть');
 
   // Вертикальное меню игр
   function drawIcon(canvas, slug){
@@ -804,8 +841,9 @@
   buildVMenu();
 
   // Заголовок
-  $('#openSettings').onclick = () => { $('#muteToggle').checked = settings.mute; $('#vfxToggle').checked = settings.vfx; $('#themeAltToggle').checked = settings.theme==='alt'; settingsDlg = openDialog('#settingsDialog', $('#openSettings')); };
-  $('#openAvatar').onclick = () => { openAvatarPanel($('#openAvatar')); };
+  makeCanvasButton($('#btnGames'),{label:'Игры',onClick(){ location.hash=''; }});
+  makeCanvasButton($('#btnSettings'),{label:'Настройки',onClick(){ $('#muteToggle').checked = settings.mute; $('#vfxToggle').checked = settings.vfx; $('#themeAltToggle').checked = settings.theme==='alt'; settingsDlg = openDialog('#settingsDialog', $('#btnSettings')); }});
+  makeCanvasButton($('#btnAvatar'),{label:'Аватар',onClick(){ openAvatarPanel($('#btnAvatar')); }});
 
   </script>
 </body>
