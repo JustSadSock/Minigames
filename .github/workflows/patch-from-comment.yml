@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   apply:
-    if: startsWith(github.event.comment.body, "/patch")
+    if: startsWith(github.event.comment.body, '/patch')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
