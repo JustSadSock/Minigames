@@ -105,8 +105,10 @@
     canvas.addEventListener('pointerdown', onPointer, {passive:false});
     function onKeyDown(e){ keys[e.key.toLowerCase()] = true; }
     function onKeyUp(e){ keys[e.key.toLowerCase()] = false; }
+    function onEsc(e){ if(e.key==='Escape') location.hash=''; }
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('keydown', onEsc);
 
     function resetBall() {
       ball.x = width/2;
@@ -197,6 +199,7 @@
         ro.disconnect();
         window.removeEventListener('keydown', onKeyDown);
         window.removeEventListener('keyup', onKeyUp);
+        window.removeEventListener('keydown', onEsc);
         if(container.parentNode === root) root.removeChild(container);
       }
     };
