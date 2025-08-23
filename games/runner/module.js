@@ -44,17 +44,38 @@
     scoreEl.style.userSelect = 'none';
     container.appendChild(scoreEl);
 
-    const backBtn = document.createElement('button');
-    backBtn.textContent = 'Назад';
-    backBtn.className = 'btn ghost';
-    backBtn.style.position = 'absolute';
-    backBtn.style.bottom = '8px';
-    backBtn.style.left = '8px';
-    backBtn.onclick = () => { location.hash = ''; };
-    container.appendChild(backBtn);
-
+    function makeCanvasButton(canvas, { label, onClick, fontPx=8, width=canvas.width, height=canvas.height }){
+      const ctx=canvas.getContext('2d');
+      ctx.imageSmoothingEnabled=false; canvas.width=width; canvas.height=height;
+      let st=0; let enabled=true;
+      function draw(){
+        const bg=['#1a1d31','#232742','#0f1223'][st];
+        ctx.clearRect(0,0,width,height);
+        ctx.fillStyle=bg; ctx.fillRect(0,0,width,height);
+        ctx.strokeStyle='#000'; ctx.strokeRect(0.5,0.5,width-1,height-1);
+        ctx.fillStyle=enabled?'#e6ebff':'#8c92b8';
+        ctx.font=`${fontPx}px ui-monospace`;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(label,width/2,height/2+1);
+      }
+      function setEnabled(v){ enabled=!!v; draw(); }
+      function setLabel(v){ label=v; canvas.setAttribute('aria-label',v); draw(); }
+      canvas.tabIndex=0; canvas.setAttribute('role','button'); canvas.setAttribute('aria-label',label);
+      canvas.addEventListener('pointerenter',()=>{ if(enabled){st=1;draw();} });
+      canvas.addEventListener('pointerleave',()=>{ if(enabled){st=0;draw();} });
+      canvas.addEventListener('pointerdown',e=>{ if(enabled){e.preventDefault();st=2;draw();} });
+      canvas.addEventListener('pointerup',()=>{ if(enabled){st=1;draw();onClick&&onClick();} });
+      canvas.addEventListener('keydown',e=>{ if(enabled && (e.key==='Enter'||e.key===' ')){ onClick&&onClick(); } });
+      draw();
+      return { setEnabled, setLabel };
+    }
     const width = canvas.width;
     const height = canvas.height;
+    const backCanvas=document.createElement('canvas');
+    backCanvas.className='pixel'; backCanvas.width=64; backCanvas.height=16;
+    backCanvas.style.position='absolute'; backCanvas.style.left='8px'; backCanvas.style.bottom='8px';
+    container.appendChild(backCanvas);
+    makeCanvasButton(backCanvas,{label:'Назад',onClick(){location.hash='';}});
     const groundY = height - 10;
     const gravity = 0.2;
     const player = { x: 20, y: groundY - 8, vy: 0, w: 8, h: 8, jumping: false };
@@ -161,7 +182,7 @@
           if(p.life<=0) particles.splice(i,1);
         }
       }
-      scoreEl.textContent = gameOver ? `Game Over — счет: ${score} (лучший: ${best})` : `Очки: ${score}`;
+      scoreEl.textContent = gameOver ? `Game Over — счет: ${score} (лучший: ${best})` : `Очки: ${score} (лучший: ${best})`;
     }
 
     let animId; const particles=[]; const vfx = context && context.store ? context.store.get('settings.vfx', true) : true; let best = context && context.store ? context.store.get('games.runner.best',0) : 0;
