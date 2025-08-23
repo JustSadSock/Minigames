@@ -1,94 +1,85 @@
-name: Apply Diff from Comment
+name: Apply Diff from Comment (PAT only, no GitHub APIs)
 
 on:
   issue_comment:
     types: [created, edited]
 
+# Нам не нужен GITHUB_TOKEN для записи — пушим через твой PAT
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   apply:
     if: startsWith(github.event.comment.body, '/patch')
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.repository.default_branch }}
-          fetch-depth: 0
-
-      - name: Extract patch from comment
-        id: extract
+      - name: Parse comment & save patch
+        id: parse
+        shell: bash
         run: |
           set -euo pipefail
-          body=$(jq -r ".comment.body" "$GITHUB_EVENT_PATH")
+          # Вытаскиваем текст комментария из event-пейлоада (без GitHub API)
+          body=$(jq -r '.comment.body' "$GITHUB_EVENT_PATH")
 
           # /patch <branch>  (по умолчанию main)
           first_line=$(printf "%s\n" "$body" | head -n1)
-          branch=$(printf "%s\n" "$first_line" | awk "{print \$2}")
+          branch=$(printf "%s\n" "$first_line" | awk '{print $2}')
           if [ -z "${branch:-}" ] || [ "$branch" = "/patch" ]; then branch="main"; fi
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
 
           # Берём ПЕРВЫЙ fenced-блок ```
-          patch=$(printf "%s\n" "$body" | awk "
+          patch=$(printf "%s\n" "$body" | awk '
             BEGIN{inblk=0}
-            /^```/{ if(inblk==0){ inblk=1; next } else { inblk=2 } }
+            /^```/{
+              if(inblk==0){ inblk=1; next }
+              else{ inblk=2 }
+            }
             inblk==1{ print }
-          ")
+          ')
           if [ -z "$patch" ]; then
             echo "No fenced code block found. Put your diff between triple backticks." >&2
             exit 1
           fi
-          printf "%s" "$patch" > patch.diff
-          head -n 5 patch.diff || true
-          wc -l patch.diff || true
+          printf "%s" "$patch" > /tmp/patch.diff
+          head -n 5 /tmp/patch.diff || true
+          wc -l /tmp/patch.diff || true
 
-      - name: Apply patch
-        env:
-          BRANCH: ${{ steps.extract.outputs.branch }}
+      - name: Clone repo via PAT (no actions/checkout)
+        shell: bash
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git clone "https://x-access-token:${{ secrets.PAT_PUSH }}@github.com/${{ github.repository }}.git" repo
+          printf "::group::git version\n"; git --version; printf "::endgroup::\n"
 
+      - name: Apply patch, commit, push
+        shell: bash
+        working-directory: repo
+        env:
+          BRANCH: ${{ steps.parse.outputs.branch }}
+        run: |
+          set -euo pipefail
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+          # checkout/создание ветки
           if git rev-parse --verify "$BRANCH" >/dev/null 2>&1; then
             git checkout "$BRANCH"
           else
             git checkout -b "$BRANCH"
           fi
 
-          if ! git apply --index --3way --whitespace=fix patch.diff; then
-            echo "3-way failed, applying to working tree..."
-            git apply --reject --whitespace=fix patch.diff
+          # применяем патч аккуратно; если не вышло — прямое применение
+          if ! git apply --index --3way --whitespace=fix /tmp/patch.diff; then
+            echo "3-way failed, applying directly..."
+            git apply --reject --whitespace=fix /tmp/patch.diff
             git add -A
           fi
 
-          msg=$(grep -m1 -E "^Subject:\s*(.+)$" patch.diff | sed -E "s/^Subject:\s*//")
+          # Subject: → сообщение коммита
+          msg=$(grep -m1 -E '^Subject:\s*(.+)$' /tmp/patch.diff | sed -E 's/^Subject:\s*//')
           : "${msg:=apply patch from comment}"
           git commit -m "$msg"
+
+          # пуш строго через PAT
+          git remote set-url origin "https://x-access-token:${{ secrets.PAT_PUSH }}@github.com/${{ github.repository }}.git"
           git push origin HEAD:"$BRANCH"
-
-      - name: React success
-        if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: context.payload.comment.id,
-              content: "rocket"
-            })
-
-      - name: React failure
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: context.payload.comment.id,
-              content: "confused"
-            })
