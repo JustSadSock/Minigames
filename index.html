@@ -41,7 +41,21 @@
       color:var(--ink);
       display:flex;align-items:center;gap:12px;
     }
-    header h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.5px;flex:1;text-align:center;}
+    /* — хедер с аватаром слева, тайтлом по центру, шестерёнкой справа — */
+    header{position:sticky;top:0;z-index:5}
+    .hdr-left{display:flex;align-items:center;gap:8px;min-width:0}
+    .hdr-grow{flex:1;display:flex;justify-content:center;min-width:0}
+    .hdr-right{display:flex;align-items:center;gap:8px}
+    .avatarSmall{
+      width:28px;height:28px;image-rendering:pixelated;border-radius:50%;
+      background:#121428;border:1px solid #000;box-shadow:inset 0 0 0 1px #333b77;
+      cursor:pointer;
+    }
+    .nickTop{font-weight:700;color:#e9edff;max-width:40vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    /* канвас-кнопка шестерёнки */
+    #btnSettings{cursor:pointer}
+    #btnSettings:focus{outline:2px solid var(--highlight);outline-offset:2px}
+    canvas.pixel{image-rendering:pixelated}
     .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
     /* Кнопки с четырьмя состояниями: idle, hover, active, disabled */
     .btn{
@@ -72,6 +86,8 @@
 
     main{flex:1;display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:12px;padding:12px;align-items:flex-start;}
     .side{display:grid;gap:12px;max-width:300px;width:100%;}
+    /* большую плашку профиля убираем из колонки — она теперь вверху */
+    .side .avatar{display:none}
     .center{display:grid;gap:12px;grid-template-rows:1fr;}
     .panel{
       background:var(--panel);
@@ -101,7 +117,8 @@
       main{grid-template-columns:1fr;grid-template-rows:auto auto;max-width:720px;margin:0 auto;}
       .side{max-width:none;}
       .center{gap:8px;}
-      .vlist{height:calc(100vh - 120px);}
+      /* используем 100dvh, чтобы не «вылазило» за экран на мобилках */
+      .vlist{height:calc(100dvh - 120px);}
     }
 
     .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;}
@@ -111,9 +128,16 @@
 </head>
 <body>
   <header>
-    <canvas id="btnAvatar" class="pixel" width="32" height="32" style="width:32px;height:32px;"></canvas>
-    <h1>DeepFly — мини‑игры</h1>
-    <canvas id="btnSettings" class="pixel" width="32" height="32" style="width:32px;height:32px;"></canvas>
+    <div class="hdr-left">
+      <canvas id="btnAvatar" class="pixel avatarSmall" width="32" height="32"></canvas>
+      <span id="nickTop" class="nickTop">Игрок</span>
+    </div>
+    <div class="hdr-grow">
+      <h1 style="margin:0;font-size:16px;font-weight:700;letter-spacing:.5px;">DeepFly — мини-игры</h1>
+    </div>
+    <div class="hdr-right">
+      <canvas id="btnSettings" class="pixel" width="32" height="32" style="width:32px;height:32px;"></canvas>
+    </div>
   </header>
 
   <main>
@@ -199,6 +223,7 @@
   const HUB_VERSION = '1.0.0';
 
   const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
   // Универсальная канвас-кнопка
   function makeCanvasButton(canvas, { label, drawIcon, onClick, fontPx=10, width=canvas.width, height=canvas.height }){
@@ -495,6 +520,9 @@
     $('#playerName').textContent = profile.nickname;
     avatar1.setParts(profile.avatar);
     const avatarEdit = makeAvatar($('#avatarEdit'), profile.avatar);
+    // маленький аватар в шапке — анимированный
+    const avatarTop = makeAvatar($('#btnAvatar'), profile.avatar);
+    $('#nickTop').textContent = profile.nickname;
 
     let avatarDlg=null;
     function openAvatarPanel(opener){
@@ -526,6 +554,7 @@
       store.set('profile.avatar', profile.avatar);
       $('#playerName').textContent = profile.nickname;
       avatar1.setParts(profile.avatar);
+      $('#nickTop').textContent = profile.nickname;
   }
   makeCanvasButton($('#profileSave'),{label:'Профиль',onClick(){ openAvatarPanel($('#profileSave')); }});
   makeCanvasButton($('#avatarSave'),{label:'Сохранить',onClick(){ saveProfile(); avatarDlg && avatarDlg.close(); }});
@@ -563,6 +592,7 @@
   $('#settingsClose').setAttribute('aria-label','Закрыть');
 
   // Вертикальное меню игр
+  // (ничего не меняем — как и просил, лоадер модулей остаётся как был)
     function drawGameIcon(ctx, slug){
       const styles=getComputedStyle(document.documentElement);
       const even=styles.getPropertyValue('--grid-even').trim();
@@ -643,29 +673,40 @@
   // Заголовок
   function drawGear(ctx,state=0){
     ctx.clearRect(0,0,32,32);
+    const cx=16, cy=16;
+    // зубья
+    ctx.save();
+    ctx.translate(cx,cy);
+    for(let i=0;i<8;i++){
+      ctx.rotate(Math.PI/4);
+      ctx.fillStyle='#e6ebff';
+      ctx.fillRect(12,-2,6,4);
+    }
+    ctx.restore();
+    // корпус
+    ctx.beginPath();
+    ctx.arc(cx,cy,10,0,Math.PI*2);
+    ctx.arc(cx,cy,5,0,Math.PI*2,true);
     ctx.fillStyle='#e6ebff';
-    ctx.fillRect(14,4,4,24);
-    ctx.fillRect(4,14,24,4);
+    ctx.fill('evenodd');
     if(state>0){
       ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--highlight');
       ctx.lineWidth=1; ctx.strokeRect(1.5,1.5,ctx.canvas.width-3,ctx.canvas.height-3);
     }
   }
-  function drawHeadIcon(ctx,state=0){
-    ctx.clearRect(0,0,32,32);
-    ctx.fillStyle='#ffd166';
-    ctx.fillRect(8,8,16,16);
-    ctx.fillStyle='#10131e';
-    ctx.fillRect(12,12,4,4);
-    ctx.fillRect(20,12,4,4);
-    if(state>0){
-      ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--highlight');
-      ctx.lineWidth=1; ctx.strokeRect(1.5,1.5,ctx.canvas.width-3,ctx.canvas.height-3);
-    }
-  }
-  makeCanvasButton($('#btnSettings'),{drawIcon:drawGear,onClick(){ $('#muteToggle').checked = settings.mute; $('#vfxToggle').checked = settings.vfx; $('#themeAltToggle').checked = settings.theme==='alt'; settingsDlg = openDialog('#settingsDialog', $('#btnSettings')); },width:32,height:32});
+  makeCanvasButton($('#btnSettings'),{
+    drawIcon:drawGear,
+    onClick(){
+      $('#muteToggle').checked = settings.mute;
+      $('#vfxToggle').checked = settings.vfx;
+      $('#themeAltToggle').checked = settings.theme==='alt';
+      settingsDlg = openDialog('#settingsDialog', $('#btnSettings'));
+    },
+    width:32,height:32
+  });
   $('#btnSettings').setAttribute('aria-label','Настройки');
-  makeCanvasButton($('#btnAvatar'),{drawIcon:drawHeadIcon,onClick(){ openAvatarPanel($('#btnAvatar')); },width:32,height:32});
+  // Аватар в шапке открывает профиль (кнопка без состояний)
+  $('#btnAvatar').addEventListener('click',()=>openAvatarPanel($('#btnAvatar')));
   $('#btnAvatar').setAttribute('aria-label','Профиль');
 
   </script>
