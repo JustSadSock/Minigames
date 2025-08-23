@@ -25,8 +25,8 @@
       --muted:#9aa5d9;
       --p1:#ff5ca8;
       --p2:#68c7ff;
-      --radius:8px;
-      --shadow:0 6px 16px rgba(0,0,0,.28);
+      --radius:0px;
+      --shadow:none;
     }
 
     html,body{height:100%;margin:0;color:var(--ink);background:var(--bg);
@@ -51,23 +51,19 @@
       --border2: #191c30;
       --text: #e6ebff;
       appearance:none;border:0;cursor:pointer;
-      padding:6px 10px;font-weight:700;font-size:12px;border-radius:10px;
+      padding:6px 10px;font-weight:700;font-size:12px;
       color:var(--text);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.06), transparent 60%),
-        linear-gradient(180deg, var(--bg1), var(--bg2));
-      box-shadow: inset 0 -2px 0 0 rgba(0,0,0,.4), 0 6px 0 0 rgba(0,0,0,.2), 0 10px 16px rgba(0,0,0,.3);
-      transition: transform .05s ease, filter .15s ease;
+      background: linear-gradient(180deg, var(--bg1), var(--bg2));
       position:relative;
       min-width:40px;min-height:40px;touch-action:manipulation;
     }
     .btn::after{
-      content:""; position:absolute; inset:0;border-radius:10px;
+      content:""; position:absolute; inset:0;
       box-shadow: inset 0 0 0 1px var(--border1), inset 0 0 0 2px var(--border2);
       pointer-events:none;
     }
     .btn:hover{filter:brightness(1.2);}
-    .btn:active{transform:translateY(2px); box-shadow: inset 0 -1px 0 0 rgba(0,0,0,.45), 0 4px 0 0 rgba(0,0,0,.2), 0 8px 12px rgba(0,0,0,.3);}
+    .btn:active{transform:translateY(1px);}
     .btn[disabled]{opacity:.5;cursor:not-allowed;filter:grayscale(.6) saturate(.5);}
     .btn:focus{outline:2px solid var(--highlight);outline-offset:2px;}
     .p1{--bg1:#ff6bb5;--bg2:#c43e7a;--text:#fff;}
@@ -76,47 +72,36 @@
 
     main{flex:1;display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:12px;padding:12px;align-items:flex-start;}
     .side{display:grid;gap:12px;max-width:300px;width:100%;}
-    .center{display:grid;gap:12px;}
+    .center{display:grid;gap:12px;grid-template-rows:1fr;}
     .panel{
       background:var(--panel);
       border:1px solid var(--border);
-      border-radius:var(--radius);
+      position:relative;
       padding:8px;
-      box-shadow:var(--shadow);
+    }
+    .panel::before{
+      content:"";position:absolute;inset:1px;border:1px solid rgba(255,255,255,.08);pointer-events:none;
     }
     .avatar{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;}
     .avatar .name{font-weight:700;color:#e9edff;font-size:14px;margin-bottom:4px;}
     .avatar .stats{font-size:12px;color:var(--muted);}    
     .pixel{image-rendering: pixelated; image-rendering: crisp-edges;}
-    /* Сцена-превью */
-    .scene{
-      position:relative;
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      width:100%;aspect-ratio:1/1;
-    }
-    .scene canvas{border-radius:var(--radius);}
     /* Вертикальное меню игр */
-    .vlist{display:grid;gap:8px;overflow-y:auto;padding:4px;max-height:calc(100vh - 160px);}
+    .vlist{display:grid;gap:8px;overflow-y:auto;padding:4px;height:100%;}
     .vcard{appearance:none;background:none;border:0;padding:0;cursor:pointer;transition:filter .2s;}
     .vcard:hover{filter:brightness(1.2);}
     .vcard:focus{outline:2px solid var(--highlight);outline-offset:2px;}
     .vcard canvas{width:100%;height:auto;image-rendering:pixelated;}
+    .gameRoot{height:100%;}
     .hud{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);}
-    .tag{padding:4px 8px;border-radius:999px;background:#2b2f5e;border:1px solid #3a3f75;}
+    .tag{padding:4px 8px;background:#2b2f5e;border:1px solid #3a3f75;}
     #hud{position:fixed;bottom:8px;right:8px;pointer-events:none;}
     #hud *{pointer-events:auto;}
     @media(max-width:860px){
       main{grid-template-columns:1fr;grid-template-rows:auto auto;max-width:720px;margin:0 auto;}
       .side{max-width:none;}
-      .scene{display:none!important;}
       .center{gap:8px;}
-      .vlist{max-height:calc(100vh - 120px);}
+      .vlist{height:calc(100vh - 120px);}
     }
 
     .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;}
@@ -126,9 +111,9 @@
 </head>
 <body>
   <header>
-    <canvas id="btnAvatar" class="pixel" width="32" height="32" style="width:32px;height:32px;border-radius:16px;"></canvas>
+    <canvas id="btnAvatar" class="pixel" width="32" height="32" style="width:32px;height:32px;"></canvas>
     <h1>DeepFly — мини‑игры</h1>
-    <canvas id="btnSettings" class="pixel" width="32" height="32" style="width:32px;height:32px;border-radius:16px;"></canvas>
+    <canvas id="btnSettings" class="pixel" width="32" height="32" style="width:32px;height:32px;"></canvas>
   </header>
 
   <main>
@@ -146,12 +131,10 @@
           </div>
         </div>
       </section>
-      <!-- Центральная колонка: сцена и вертикальное меню игр -->
+      <!-- Центральная колонка: список игр и контейнер игры -->
       <section class="center">
-        <div class="scene panel" id="scenePanel">
-          <canvas id="preview" class="pixel" width="192" height="192"></canvas>
-        </div>
         <div id="vmenu" class="panel vlist" role="list"></div>
+        <div id="gameRoot" class="panel gameRoot hidden"></div>
       </section>
     </main>
     <div id="hud" class="panel hud">
@@ -209,9 +192,9 @@
 
   <script type="module">
   /*
-    Базовый SPA‑хаб: рисует превью (сетку, курсор, частицы), управляет темой,
-    хранит настройки, загружает игровые модули и передаёт им контекст.
-    Каждая игра экспортирует manifest + mount/unmount, живёт в games/<slug>/.
+    Базовый SPA‑хаб: управляет темой, хранит настройки, загружает игровые
+    модули и передаёт им контекст. Каждая игра экспортирует manifest +
+    mount/unmount и живёт в каталоге games/<slug>/.
   */
   const HUB_VERSION = '1.0.0';
 
@@ -289,7 +272,7 @@
   function flash(text){
     const el = document.createElement('div');
     el.textContent = text;
-    el.style.cssText = `position:fixed;left:50%;top:20px;transform:translateX(-50%);background:#1e2244;border:1px solid #2c325a;color:#e6ebff;padding:8px 12px;border-radius:10px;box-shadow:${getComputedStyle(document.documentElement).getPropertyValue('--shadow')};font-size:12px;z-index:999;opacity:0;transition:opacity .2s ease`;
+    el.style.cssText = `position:fixed;left:50%;top:20px;transform:translateX(-50%);background:#1e2244;border:1px solid #2c325a;color:#e6ebff;padding:8px 12px;border-radius:0;font-size:12px;z-index:999;opacity:0;transition:opacity .2s ease`;
     document.body.appendChild(el);
     requestAnimationFrame(()=>{ el.style.opacity='1'; });
     setTimeout(()=>{ el.style.opacity='0'; }, 2200);
@@ -329,109 +312,6 @@
     wrap.addEventListener('click',onClick);
     return { close };
   }
-
-  // Автономный мини‑превью на главной (сеточная арена, курсоры, частицы)
-  const previewCanvas = $('#preview');
-  const pctx = previewCanvas.getContext('2d', { alpha:false });
-  pctx.imageSmoothingEnabled = false;
-  function fitCanvas(canvas, panel){
-    const ro = new ResizeObserver(()=>{
-      const w = panel.clientWidth; const h = panel.clientHeight;
-      const scale = Math.max(1, Math.floor(Math.min(w/canvas.width, h/canvas.height)));
-      canvas.style.width = canvas.width*scale+'px';
-      canvas.style.height = canvas.height*scale+'px';
-    });
-    ro.observe(panel); return ro;
-  }
-  const previewRO = fitCanvas(previewCanvas, $('#scenePanel'));
-  const PREVIEW_W = 192, PREVIEW_H = 192;
-  const GRID = 12;
-  const previewState = {
-    t:0,
-    cursors:[
-      { x: Math.floor(GRID*0.7), y: Math.floor(GRID*0.4), frame:0, color: '#ff77bd' },
-      { x: Math.floor(GRID*0.3), y: Math.floor(GRID*0.7), frame:0, color: '#68c7ff' }
-    ],
-    particles:[]
-  };
-  function rnd(n){ return Math.random()*n; }
-  function spawn(x,y,color){
-    if(!settings.vfx) return;
-    for(let i=0;i<5;i++){
-      previewState.particles.push({ x, y, vx:(Math.random()-.5)*.6, vy:(Math.random()-.5)*.6 - .2, life:20+Math.random()*20, age:0, color });
-    }
-  }
-  previewCanvas.addEventListener('pointerdown', e=>{
-    const rect = previewCanvas.getBoundingClientRect();
-    const sx = (e.clientX-rect.left)/rect.width;
-    const sy = (e.clientY-rect.top)/rect.height;
-    const gx = Math.max(0, Math.min(GRID-1, Math.floor(sx*GRID)));
-    const gy = Math.max(0, Math.min(GRID-1, Math.floor(sy*GRID)));
-    previewState.cursors[0].x = gx; previewState.cursors[0].y = gy; previewState.cursors[0].frame = 0;
-    spawn(gx*16+8, gy*16+8, '#ff77bd');
-  });
-  function drawPreviewGrid(){
-    const styles = getComputedStyle(document.documentElement);
-    const even = styles.getPropertyValue('--grid-even');
-    const odd = styles.getPropertyValue('--grid-odd');
-    const border = styles.getPropertyValue('--border');
-    for(let y=0;y<GRID;y++){
-      for(let x=0;x<GRID;x++){
-        pctx.fillStyle = (x+y)%2 ? even : odd;
-        pctx.fillRect(x*16,y*16,16,16);
-      }
-    }
-    pctx.strokeStyle = border;
-    pctx.lineWidth = 1;
-    pctx.strokeRect(0.5,0.5,PREVIEW_W-1,PREVIEW_H-1);
-  }
-  function drawPreviewCursor(c){
-    const frames = [2,3,4,5];
-    const r = frames[Math.floor(c.frame)%frames.length];
-    const cx = c.x*16+8; const cy = c.y*16+8;
-    pctx.strokeStyle = c.color; pctx.lineWidth = 1;
-    pctx.beginPath(); pctx.arc(cx, cy, r, 0, Math.PI*2); pctx.stroke();
-    pctx.beginPath(); pctx.arc(cx, cy, Math.max(1,r-2), 0, Math.PI*2); pctx.stroke();
-  }
-  function drawPreviewParticles(){
-    for(let i=previewState.particles.length-1;i>=0;i--){
-      const p = previewState.particles[i]; p.age++;
-      p.x += p.vx; p.y += p.vy; p.vy += 0.02;
-      const a = Math.max(0, 1 - p.age/p.life);
-      if(p.age>p.life){ previewState.particles.splice(i,1); continue; }
-      pctx.fillStyle = p.color; pctx.globalAlpha = a;
-      pctx.fillRect(p.x-1,p.y-1,2,2);
-      pctx.globalAlpha = 1;
-    }
-  }
-  let fpsCounter=0, fpsLast=performance.now();
-  let previewRAF=null, previewRunning=false;
-  function previewFrame(){
-    const now = performance.now(); fpsCounter++;
-    if(now - fpsLast > 500){
-      const fps = Math.round(fpsCounter*1000/(now-fpsLast));
-      $('#fps').textContent = `FPS ${fps}`;
-      fpsCounter=0; fpsLast = now;
-    }
-    previewState.t++;
-    drawPreviewGrid();
-    previewState.cursors.forEach(c => { c.frame += 0.25; drawPreviewCursor(c); });
-    if(previewState.t % 12 === 0){
-      previewState.cursors.forEach(c => spawn(c.x*16+8, c.y*16+8, c.color));
-    }
-    if(previewState.t % 150 === 0){
-      const colors=['#ff77bd','#68c7ff','#ffd166','#7aff9e','#c29eff'];
-      const gx=Math.floor(Math.random()*GRID);
-      const gy=Math.floor(Math.random()*GRID);
-      spawn(gx*16+8, gy*16+8, colors[Math.floor(Math.random()*colors.length)]);
-    }
-    drawPreviewParticles();
-    previewRAF = requestAnimationFrame(previewFrame);
-  }
-  function startPreview(){ if(previewRunning) return; previewRunning=true; previewFrame(); }
-  function stopPreview(){ if(!previewRunning) return; previewRunning=false; if(previewRAF!==null){ cancelAnimationFrame(previewRAF); previewRAF=null; } }
-  drawPreviewGrid();
-  if(!window.matchMedia('(max-width: 860px)').matches) startPreview();
 
   // Аватары с частями лица
   function px(ctx,x,y,s,color){ ctx.fillStyle=color; ctx.fillRect(x*s,y*s,s,s); }
@@ -522,219 +402,60 @@
     const hairPalette = ['#ff5ca8','#68c7ff','#ffd166','#7aff9e','#c29eff','#ff8c42'];
     const avatar1 = makeAvatar($('#avatar1'), {hairStyle:0,eyes:0,mouth:0,hairColor:0});
 
-  /*
-    Встроенные версии игр.  Чтобы обеспечить работу при открытии файла
-    напрямую (file://) без сервера, мы дублируем реализацию модулей
-    Pong и Runner прямо здесь.  Когда сайт работает по HTTP, эти
-    встроенные версии не нужны — хаб пытается загрузить игры из
-    каталога games/<slug>/module.js и использует их.  Но если загрузка
-    через <script src> завершилась неудачей (например, из-за
-    ограничений браузера на file://), встраиваемые варианты спасают.
-  */
-  const games = {
-    pong: {
-      manifest: { slug:'pong', name:'Pong', caption:'Классика 1v1', icon:'🏓', version:'1.0.0', players:2 },
-      async mount(root, context) {
-        // реализация аналогична games/pong/module.js
-        const container = document.createElement('div');
-        container.className = 'game-pong';
-        container.style.position = 'relative';
-        container.style.width = '100%';
-        container.style.height = '100%';
-        root.innerHTML = '';
-        root.appendChild(container);
-        const canvas = document.createElement('canvas');
-        canvas.width = 160;
-        canvas.height = 100;
-        canvas.className = 'pixel';
-        canvas.style.width = canvas.width + 'px';
-        canvas.style.height = canvas.height + 'px';
-        container.appendChild(canvas);
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = false;
-        const ro = new ResizeObserver(()=>{
-          const w = container.clientWidth, h = container.clientHeight;
-          const scale = Math.max(1, Math.floor(Math.min(w/canvas.width, h/canvas.height)));
-          canvas.style.width = canvas.width*scale+'px';
-          canvas.style.height = canvas.height*scale+'px';
-        });
-        ro.observe(container);
-        const scoreEl = document.createElement('div');
-        scoreEl.style.position = 'absolute';
-        scoreEl.style.top = '6px';
-        scoreEl.style.left = '50%';
-        scoreEl.style.transform = 'translateX(-50%)';
-        scoreEl.style.color = getComputedStyle(document.documentElement).getPropertyValue('--ink');
-        scoreEl.style.font = '14px ui-monospace';
-        scoreEl.style.userSelect = 'none';
-        container.appendChild(scoreEl);
-        const backCv=document.createElement('canvas');
-        backCv.className='pixel'; backCv.width=64; backCv.height=16;
-        backCv.style.position='absolute'; backCv.style.bottom='8px'; backCv.style.left='8px';
-        container.appendChild(backCv);
-        makeCanvasButton(backCv,{label:'Назад',onClick(){ location.hash=''; }});
-        const width = canvas.width;
-        const height = canvas.height;
-        const paddleW = 2;
-        const paddleH = 16;
-        const ballSize = 2;
-        let p1 = { y: height/2 - paddleH/2, score: 0 };
-        let p2 = { y: height/2 - paddleH/2, score: 0 };
-        let ball = { x: width/2, y: height/2, vx: 1.8, vy: 1.2 };
-        let running = true;
-        let pointerY = null;
-        const keys = {};
-        function onPointer(e){ e.preventDefault(); const rect=canvas.getBoundingClientRect(); const sy=(e.clientY-rect.top)/rect.height; pointerY = sy*height; }
-        canvas.addEventListener('pointermove', onPointer, {passive:false});
-        canvas.addEventListener('pointerdown', onPointer, {passive:false});
-        function onKeyDown(e){ keys[e.key.toLowerCase()] = true; }
-        function onKeyUp(e){ keys[e.key.toLowerCase()] = false; }
-        window.addEventListener('keydown', onKeyDown);
-        window.addEventListener('keyup', onKeyUp);
-        function resetBall(){ ball.x = width/2; ball.y = height/2; ball.vx = (Math.random()>0.5?1:-1)*1.8; ball.vy = (Math.random()-0.5)*2; }
-        function update(){
-          if(pointerY !== null){ const target = pointerY - paddleH/2; p1.y += (target - p1.y)*0.2; }
-          else{ if(keys['w']) p1.y -= 2; if(keys['s']) p1.y += 2; }
-          if(keys['arrowup'] || keys['arrowdown']){ if(keys['arrowup']) p2.y -= 2; if(keys['arrowdown']) p2.y += 2; }
-          else{ const target = ball.y - paddleH/2; p2.y += (target - p2.y)*0.05; }
-          p1.y = Math.max(0, Math.min(height - paddleH, p1.y)); p2.y = Math.max(0, Math.min(height - paddleH, p2.y));
-          ball.x += ball.vx; ball.y += ball.vy;
-          if(ball.y <= 0 || ball.y >= height - ballSize){ ball.vy *= -1; ball.y = Math.max(0, Math.min(height-ballSize, ball.y)); }
-          if(ball.x <= paddleW && ball.y + ballSize > p1.y && ball.y < p1.y + paddleH){ ball.vx = Math.abs(ball.vx); const impact=(ball.y+ballSize/2-(p1.y+paddleH/2))/(paddleH/2); ball.vy = impact*1.5; }
-          if(ball.x + ballSize >= width - paddleW && ball.y + ballSize > p2.y && ball.y < p2.y + paddleH){ ball.vx = -Math.abs(ball.vx); const impact=(ball.y+ballSize/2-(p2.y+paddleH/2))/(paddleH/2); ball.vy = impact*1.5; }
-          if(ball.x < -ballSize){ p2.score++; resetBall(); }
-          if(ball.x > width + ballSize){ p1.score++; resetBall(); }
-        }
-        function render(){
-          const styles = getComputedStyle(document.documentElement);
-          const odd = styles.getPropertyValue('--grid-odd').trim();
-          const even = styles.getPropertyValue('--grid-even').trim();
-          const highlight = styles.getPropertyValue('--highlight');
-          for(let y=0; y<height; y+=16){ for(let x=0; x<width; x+=16){ ctx.fillStyle = ((x+y)/16 % 2 === 0) ? odd : even; ctx.fillRect(x,y,16,16); } }
-          ctx.fillStyle = highlight; for(let y=0;y<height;y+=6) ctx.fillRect(width/2-1,y,2,3);
-          ctx.fillStyle = '#ff77bd'; ctx.fillRect(0,p1.y,paddleW,paddleH);
-          ctx.fillStyle = '#68c7ff'; ctx.fillRect(width-paddleW,p2.y,paddleW,paddleH);
-          ctx.fillStyle = '#ffd166'; ctx.fillRect(ball.x, ball.y, ballSize, ballSize);
-          scoreEl.textContent = `${p1.score} : ${p2.score}`;
-        }
-        let animId;
-        function loop(){ update(); render(); animId = requestAnimationFrame(loop); }
-        loop();
-        return { unmount(){ cancelAnimationFrame(animId); canvas.removeEventListener('pointermove', onPointer); canvas.removeEventListener('pointerdown', onPointer); window.removeEventListener('keydown', onKeyDown); window.removeEventListener('keyup', onKeyUp); ro.disconnect(); if(container.parentNode===root) root.removeChild(container); } };
-      }
-    },
-    runner: {
-      manifest: { slug:'runner', name:'Runner', caption:'Прыгай и беги', icon:'🏃', version:'1.0.0', players:1 },
-      async mount(root, context){
-        const container = document.createElement('div');
-        container.className = 'game-runner'; container.style.position = 'relative'; container.style.width='100%'; container.style.height='100%'; root.innerHTML=''; root.appendChild(container);
-        const canvas = document.createElement('canvas'); canvas.width=160; canvas.height=90; canvas.className='pixel'; canvas.style.width=canvas.width+'px'; canvas.style.height=canvas.height+'px'; container.appendChild(canvas);
-        const ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled=false;
-        const ro = new ResizeObserver(()=>{ const w=container.clientWidth,h=container.clientHeight; const scale=Math.max(1,Math.floor(Math.min(w/canvas.width,h/canvas.height))); canvas.style.width=canvas.width*scale+'px'; canvas.style.height=canvas.height*scale+'px'; }); ro.observe(container);
-        const scoreEl = document.createElement('div'); scoreEl.style.position='absolute'; scoreEl.style.top='6px'; scoreEl.style.left='8px'; scoreEl.style.color=getComputedStyle(document.documentElement).getPropertyValue('--ink'); scoreEl.style.font='14px ui-monospace'; scoreEl.style.userSelect='none'; container.appendChild(scoreEl);
-        const backCv=document.createElement('canvas'); backCv.className='pixel'; backCv.width=64; backCv.height=16; backCv.style.position='absolute'; backCv.style.bottom='8px'; backCv.style.left='8px'; container.appendChild(backCv); makeCanvasButton(backCv,{label:'Назад',onClick(){ location.hash=''; }});
-        const width = canvas.width; const height = canvas.height; const groundY = height - 10; const gravity=0.2;
-        const player = { x:20, y: groundY - 8, vy:0, w:8, h:8, jumping:false };
-        let obstacles = []; let spawnTimer=0; let score=0; let running=true; let gameOver=false;
-        function resetGame(){ player.y=groundY-player.h; player.vy=0; player.jumping=false; obstacles=[]; spawnTimer=0; score=0; gameOver=false; running=true; }
-        function jump(){ if(!player.jumping && !gameOver){ player.vy = -4.2; player.jumping = true; } if(gameOver){ resetGame(); } }
-        function onPointer(e){ e.preventDefault(); jump(); }
-        function onKey(e){ if(e.key === ' '){ e.preventDefault(); jump(); } }
-        canvas.addEventListener('pointerdown', onPointer, {passive:false});
-        window.addEventListener('keydown', onKey);
-        function update(){ if(!running) return; player.vy += gravity; player.y += player.vy; if(player.y >= groundY-player.h){ player.y = groundY-player.h; player.vy=0; player.jumping=false; } spawnTimer--; if(spawnTimer <= 0){ const obsH = 12 + Math.floor(Math.random()*10); obstacles.push({ x: width, y: groundY - obsH, w:6, h:obsH }); spawnTimer = 80 + Math.random()*60; } for(let i=obstacles.length-1; i>=0; i--){ const o=obstacles[i]; o.x -= 1.8; if(!gameOver && o.x < player.x + player.w && o.x + o.w > player.x && o.y < player.y + player.h && o.y + o.h > player.y){ gameOver = true; running=false; if(score>best){ best=score; context && context.store && context.store.set('games.runner.best', best); } } if(o.x + o.w < 0){ obstacles.splice(i,1); if(!gameOver) score++; } } }
-        function drawPlayer(){ const px=(x,y,s,c)=>{ ctx.fillStyle=c; ctx.fillRect(x*s,y*s,s,s); }; const s=1; const offX=Math.floor(player.x); const offY=Math.floor(player.y); // тело
-          px(offX+1, offY+3, s, '#ff77bd'); px(offX+2, offY+3, s, '#ff77bd'); px(offX+1, offY+4, s, '#ff77bd'); px(offX+2, offY+4, s, '#ff77bd'); px(offX+1, offY+5, s, '#ff77bd'); px(offX+2, offY+5, s, '#ff77bd'); // голова
-          px(offX+1, offY+1, s, '#ffd166'); px(offX+2, offY+1, s, '#ffd166'); px(offX+1, offY+2, s, '#ffd166'); px(offX+2, offY+2, s, '#ffd166'); // глаза
-          px(offX+1, offY+2, s, '#10131e'); px(offX+2, offY+2, s, '#10131e'); }
-        function render(){ const styles=getComputedStyle(document.documentElement); const odd=styles.getPropertyValue('--grid-odd').trim(); const even=styles.getPropertyValue('--grid-even').trim(); const highlight=styles.getPropertyValue('--highlight'); for(let y=0;y<height;y+=16){ for(let x=0;x<width;x+=16){ ctx.fillStyle = ((x+y)/16 % 2 === 0) ? odd : even; ctx.fillRect(x,y,16,16); } } ctx.fillStyle=highlight; ctx.fillRect(0, groundY, width, 1); drawPlayer(); ctx.fillStyle='#ff6b6b'; obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h)); scoreEl.textContent = gameOver ? `Game Over — счет: ${score} (лучший: ${best})` : `Очки: ${score}`; }
-        let animId; let best = context && context.store ? context.store.get('games.runner.best',0) : 0; function loop(){ update(); render(); animId = requestAnimationFrame(loop); } loop();
-        return { unmount(){ running=false; cancelAnimationFrame(animId); canvas.removeEventListener('pointerdown', onPointer); window.removeEventListener('keydown', onKey); ro.disconnect(); if(container.parentNode===root) root.removeChild(container); } };
-      }
-    }
-  };
-
   // Роутинг: загрузка игрового модуля по хэшу без dynamic import
   let currentGame = null;
   async function loadGameModule(slug) {
-    if(window.__DeepFlyGames && window.__DeepFlyGames[slug]) {
-      return window.__DeepFlyGames[slug];
-    }
-    if(games && games[slug]) {
-      return games[slug];
-    }
+    if (window.__DeepFlyGames && window.__DeepFlyGames[slug]) return window.__DeepFlyGames[slug];
     return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = `./games/${slug}/module.js`;
-      // Успешная загрузка: проверяем, зарегистрирован ли модуль
-      script.onload = () => {
-        if (window.__DeepFlyGames && window.__DeepFlyGames[slug]) {
-          resolve(window.__DeepFlyGames[slug]);
-        } else if (games && games[slug]) {
-          // Файл загружен, но модуль не зарегистрировался: используем встроенную игру
-          resolve(games[slug]);
-        } else {
-          // Нет ни внешнего, ни встроенного модуля
-          reject(new Error(`Модуль ${slug} не зарегистрирован`));
-        }
+      const s = document.createElement('script');
+      s.src = `./games/${slug}/module.js`;
+      s.onload = () => {
+        if (window.__DeepFlyGames && window.__DeepFlyGames[slug]) resolve(window.__DeepFlyGames[slug]);
+        else reject(new Error(`Модуль ${slug} не зарегистрирован`));
       };
-      // Ошибка загрузки: пытаемся использовать встроенный вариант
-      script.onerror = () => {
-        // Удаляем тег, чтобы не засорять head
-        if (script.parentNode) script.parentNode.removeChild(script);
-        if (games && games[slug]) {
-          resolve(games[slug]);
-        } else {
-          reject(new Error(`Не удалось загрузить файл games/${slug}/module.js`));
-        }
-      };
-      document.head.appendChild(script);
+      s.onerror = () => reject(new Error(`Не удалось загрузить games/${slug}/module.js`));
+      document.head.appendChild(s);
     });
   }
+  const gameRoot = $('#gameRoot');
   async function loadFromHash(){
     const m = location.hash.match(/game=([\w-]+)/);
-    const isMobile = window.matchMedia('(max-width: 860px)').matches;
     if(!m){
       if(currentGame && currentGame.unmount) currentGame.unmount();
       currentGame = null;
-      document.querySelectorAll('.side').forEach(el=>el.style.display='');
-      $('#vmenu').style.display='grid';
-      $('#scenePanel').classList.add('scene');
-      if(isMobile){
-        $('#scenePanel').style.display='none';
-      } else {
-        $('#scenePanel').style.display='flex';
-        $('#preview').style.display='block';
-        startPreview();
-      }
-      const firstCard = $('#vmenu .vcard'); if(firstCard) firstCard.focus();
+      gameRoot.classList.add('hidden');
+      $('#vmenu').style.display = 'grid';
+      document.querySelectorAll('.side').forEach(el => el.style.display = '');
       return;
     }
     const slug = m[1];
-    try {
+    try{
       const mod = await loadGameModule(slug);
       if(currentGame && currentGame.unmount) currentGame.unmount();
-      currentGame = await mod.mount($('#scenePanel'), getContext());
-      stopPreview();
-      document.querySelectorAll('.side').forEach(el=>el.style.display='none');
-      $('#scenePanel').classList.remove('scene');
-      $('#scenePanel').style.display='flex';
-      $('#preview').style.display='none';
-      $('#vmenu').style.display='none';
-    } catch(err) {
+      $('#vmenu').style.display = 'none';
+      gameRoot.classList.remove('hidden');
+      document.querySelectorAll('.side').forEach(el => el.style.display = '');
+      currentGame = await mod.mount(gameRoot, getContext());
+    }catch(err){
       console.error(err);
-      flash(`Не удалось загрузить игру «${slug}»: ${err && err.message ? err.message : 'см. консоль'}`);
-      if(currentGame && currentGame.unmount) currentGame.unmount();
-      currentGame = null;
-      $('#vmenu').style.display='grid';
-      $('#scenePanel').classList.add('scene');
-      if(!isMobile){ $('#scenePanel').style.display='flex'; $('#preview').style.display='block'; startPreview(); } else { $('#scenePanel').style.display='none'; }
-      const firstCard = $('#vmenu .vcard'); if(firstCard) firstCard.focus();
+      flash(`Не удалось загрузить игру «${slug}»: ${err?.message || ''}`);
+      location.hash = '';
     }
   }
   window.addEventListener('hashchange', loadFromHash);
-  window.addEventListener('keydown',e=>{ if(e.key==='Escape' && location.hash.includes('game=')) location.hash=''; });
+  window.addEventListener('keydown', e => { if(e.key === 'Escape' && location.hash.includes('game=')) location.hash=''; });
   loadFromHash();
+
+  let fpsCounter=0, fpsLast=performance.now();
+  function trackFPS(){
+    const now=performance.now(); fpsCounter++;
+    if(now - fpsLast > 500){
+      $('#fps').textContent = `FPS ${Math.round(fpsCounter*1000/(now-fpsLast))}`;
+      fpsCounter=0; fpsLast=now;
+    }
+    requestAnimationFrame(trackFPS);
+  }
+  trackFPS();
   
   // Контекст, передаваемый в игры
   function getContext(){
@@ -750,7 +471,7 @@
         off(type, handler){ window.removeEventListener(type, handler); }
       },
       net:{ rest: async ()=>{ throw new Error('REST не настроен'); }, rt:{ connect:()=>({ publish(){}, subscribe(){}, close(){} }) } },
-      root: $('#scenePanel')
+      root: $('#gameRoot')
     };
   }
 
@@ -879,18 +600,18 @@
     ctx.fillStyle='#e6ebff'; ctx.font='14px ui-monospace'; ctx.textBaseline='top'; ctx.fillText(title,64,16);
     ctx.fillStyle=styles.getPropertyValue('--muted'); ctx.font='10px ui-monospace'; ctx.fillText(caption,64,34);
   }
+  const GAME_SLUGS = ['pong','runner'];
   function buildVMenu(){
     const menu=$('#vmenu'); menu.innerHTML='';
-    const slugs=Array.from(new Set([...(games?Object.keys(games):[]), ...(window.__DeepFlyGames?Object.keys(window.__DeepFlyGames):[])]));
-    slugs.forEach(slug=>{
-      const man=(games[slug]&&games[slug].manifest)||(window.__DeepFlyGames?.[slug]?.manifest)||{slug,name:slug};
+    GAME_SLUGS.forEach(slug=>{
       const btn=document.createElement('button'); btn.role='listitem'; btn.className='vcard'; btn.tabIndex=0; btn.dataset.slug=slug;
       const cv=document.createElement('canvas'); const dpr=Math.max(1,window.devicePixelRatio||1);
       cv.className='pixel'; cv.width=192*dpr; cv.height=64*dpr; cv.style.width='192px'; cv.style.height='64px';
       btn.appendChild(cv);
       menu.appendChild(btn);
-      let st=0; let pulseT=0; let raf=null; const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false; ctx.scale(dpr,dpr);
-      function redraw(){ drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st,pulse:(Math.sin(pulseT)+1)/2,scan:pulseT}); }
+      let st=0; let pulseT=0; let raf=null; let title=slug; let caption='';
+      const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false; ctx.scale(dpr,dpr);
+      function redraw(){ drawGameTile(ctx,{slug,title,caption,state:st,pulse:(Math.sin(pulseT)+1)/2,scan:pulseT}); }
       function step(){ if(st===1){ pulseT+=0.1; redraw(); raf=requestAnimationFrame(step);} }
       redraw();
       btn.addEventListener('pointerenter',()=>{st=1; pulseT=0; redraw(); step();});
@@ -908,7 +629,13 @@
         }
       });
       btn.addEventListener('focus',()=>{ btn.scrollIntoView({block:'nearest',inline:'nearest'}); });
-      btn.setAttribute('aria-label', man.name||slug);
+      btn.setAttribute('aria-label', slug);
+      loadGameModule(slug).then(mod=>{
+        const man=mod.manifest||{slug};
+        title=man.name||slug; caption=man.caption||'';
+        btn.setAttribute('aria-label', man.name||slug);
+        redraw();
+      }).catch(err=>console.error(err));
     });
   }
   buildVMenu();
