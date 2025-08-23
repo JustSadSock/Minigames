@@ -1,673 +1,239 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-  <meta name="theme-color" content="#1b1e35" id="themeColor">
-  <title>DeepFly — мини‑игры</title>
-  <!--
-    Это стартовая страница игрового хаба.  Она не требует сборки или внешних
-    библиотек и может быть открыта напрямую из файловой системы.  Основная
-    логика написана внизу в виде ES‑модуля.  Игры подключаются динамически
-    через ссылку вида #game=&lt;slug&gt; и располагаются в папке games/.
-  -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#1b1b1b" />
+  <title>SadSock’s Minigames</title>
   <style>
     :root{
-      /* Базовая цветовая палитра.  Все переменные легко
-         перекрашиваются — достаточно сменить значения здесь. */
-      --bg:#1b1e35;
-      --panel:#252b50;
-      --grid-even:#2b2f5e;
-      --grid-odd:#22254a;
-      --border:#2f3464;
-      --highlight:#ffe680;
-      --ink:#e8ebff;
-      --muted:#9aa5d9;
-      --p1:#ff5ca8;
-      --p2:#68c7ff;
-      --radius:0px;
-      --shadow:none;
+      --bg:#101014; --panel:#1a1a22; --panel-2:#232330;
+      --ink:#e5e5f0; --muted:#a9a9c2; --accent:#61ffa8; --accent-2:#7af7ff;
+      --px:1px; --safe-top: env(safe-area-inset-top); --safe-bottom: env(safe-area-inset-bottom);
+      --safe-left: env(safe-area-inset-left); --safe-right: env(safe-area-inset-right);
     }
-
-    html,body{height:100%;margin:0;color:var(--ink);background:var(--bg);
-      font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
-      overscroll-behavior:none;}
-    *{box-sizing:border-box;}
-    body{display:flex;flex-direction:column;overflow:hidden;touch-action:manipulation;}
-    header,footer{
-      padding:6px 12px;
-      background:var(--panel);
-      border-bottom:1px solid var(--border);
-      color:var(--ink);
-      display:flex;align-items:center;gap:12px;
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    html{background:var(--bg)}
+    body{
+      margin:0;color:var(--ink);
+      font-family:ui-monospace,"Cascadia Mono","Fira Code",Consolas,monospace;
+      image-rendering:pixelated; -webkit-font-smoothing:none;
+      overflow:hidden; /* без системных скроллов */
     }
-    header h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.5px;flex:1;text-align:center;}
-    .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
-    /* Кнопки с четырьмя состояниями: idle, hover, active, disabled */
-    .btn{
-      --bg1: #222642;
-      --bg2: #191c30;
-      --border1: #2a2e49;
-      --border2: #191c30;
-      --text: #e6ebff;
-      appearance:none;border:0;cursor:pointer;
-      padding:6px 10px;font-weight:700;font-size:12px;
-      color:var(--text);
-      background: linear-gradient(180deg, var(--bg1), var(--bg2));
-      position:relative;
-      min-width:40px;min-height:40px;touch-action:manipulation;
+    /* Layout */
+    .app{position:relative;min-height:100dvh;
+      padding-top:max(52px,calc(52px + var(--safe-top)));
+      padding-bottom:max(8px,var(--safe-bottom));
+      padding-left:max(0px,var(--safe-left));
+      padding-right:max(0px,var(--safe-right));
     }
-    .btn::after{
-      content:""; position:absolute; inset:0;
-      box-shadow: inset 0 0 0 1px var(--border1), inset 0 0 0 2px var(--border2);
-      pointer-events:none;
+    .bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;
+      filter:contrast(120%) saturate(110%) brightness(110%);
+      image-rendering:pixelated}
+    /* Topbar */
+    .topbar{position:fixed;top:0;left:0;right:0;z-index:10;
+      padding:calc(8px + var(--safe-top)) 8px 8px 8px;
+      display:flex;align-items:center;justify-content:space-between;
+      background:linear-gradient(#2a2a38,#1b1b26) padding-box;
+      border-bottom:var(--px) solid #000;
+      outline:var(--px) solid #4a4a66; outline-offset:-1px}
+    .brand{display:flex;align-items:center;gap:8px}
+    .logo{width:20px;height:20px;
+      background:linear-gradient(90deg,#7af7ff 0 50%,#61ffa8 50% 100%);
+      box-shadow:0 0 0 var(--px) #000 inset,0 0 0 calc(var(--px)*2) #4a4a66 inset}
+    .title{font-weight:700;letter-spacing:.5px;white-space:nowrap}
+    .actions{display:flex;align-items:center;gap:8px}
+    .btn{height:28px;padding:0 10px;cursor:pointer;color:var(--ink);
+      background:#1a1a22;border:var(--px) solid #000;
+      outline:var(--px) solid #4a4a66; outline-offset:-1px}
+    .btn.icon{width:28px;padding:0;display:grid;place-items:center}
+    .btn:active{transform:translateY(1px)}
+    .ico{display:block;width:16px;height:16px;position:relative;image-rendering:pixelated}
+    .ico-full::before{content:"";position:absolute;inset:2px;border:var(--px) solid var(--ink)}
+    .ico-gear{background:radial-gradient(circle at 50% 50%,var(--ink) 30%,#0000 31%)}
+    .ico-gear::before,.ico-gear::after{content:"";position:absolute;inset:0;
+      background:conic-gradient(from 0deg,
+        var(--ink) 0 6.25%,#0000 6.25% 12.5%,
+        var(--ink) 12.5% 18.75%,#0000 18.75% 25%,
+        var(--ink) 25% 31.25%,#0000 31.25% 37.5%,
+        var(--ink) 37.5% 43.75%,#0000 43.75% 50%,
+        var(--ink) 50% 56.25%,#0000 56.25% 62.5%,
+        var(--ink) 62.5% 68.75%,#0000 68.75% 75%,
+        var(--ink) 75% 81.25%,#0000 81.25% 87.5%,
+        var(--ink) 87.5% 93.75%,#0000 93.75% 100%);
+      mask:radial-gradient(circle at 50% 50%,#0000 0 35%,#000 36%);opacity:.9}
+    .profile{display:flex;align-items:center;gap:8px;padding:2px 6px;
+      background:#1a1a22;border:var(--px) solid #000;
+      outline:var(--px) solid #4a4a66; outline-offset:-1px}
+    .avatar{width:24px;height:24px;background:#0b0b10;border:var(--px) solid #000;
+      outline:var(--px) solid #4a4a66; outline-offset:-1px; image-rendering:pixelated}
+    .nick{color:#a9a9c2;font-weight:600}
+    /* Content */
+    .main{position:relative;z-index:1;padding:12px}
+    .list-wrap{position:relative;overflow:hidden;
+      height:calc(100dvh - 72px - max(8px,var(--safe-bottom)) - max(8px,var(--safe-top)));
+      min-height:320px;display:grid;grid-template-columns:1fr 8px;
+      background:#232330;border:var(--px) solid #000;
+      outline:var(--px) solid #4a4a66; outline-offset:-1px}
+    .list{position:relative;overflow:hidden;will-change:transform}
+    .scrollbar{position:relative;background:#12121a;border-left:var(--px) solid #000}
+    .thumb{position:absolute;left:0;width:100%;height:40px;top:0;
+      background:linear-gradient(#61ffa8,#7af7ff);
+      border:var(--px) solid #000; outline:var(--px) solid #4a4a66; outline-offset:-1px; cursor:grab}
+    .item{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;
+      padding:10px;border-bottom:var(--px) solid #000}
+    .item:last-child{border-bottom:none}
+    .icon-cell{width:48px;height:48px;
+      background:repeating-linear-gradient(45deg,#0f1422 0 6px,#101a2c 6px 12px);
+      border:var(--px) solid #000; outline:var(--px) solid #4a4a66; outline-offset:-1px}
+    .item-title{font-weight:700}
+    .item-desc{color:#a9a9c2;font-size:12px}
+    .item-play .btn{background:linear-gradient(#1e2b2a,#142322);color:#61ffa8}
+    .item-play .btn:hover{filter:brightness(1.1)}
+    .footer{position:relative;z-index:1;margin:8px 12px 0 12px;padding:6px 8px;text-align:center;
+      background:#1a1a22;border:var(--px) solid #000;outline:var(--px) solid #4a4a66; outline-offset:-1px;color:#a9a9c2}
+    @media (max-width:640px){
+      .item{grid-template-columns:40px 1fr auto;gap:8px;padding:8px}
+      .icon-cell{width:40px;height:40px}
+      .item-desc{display:none}
+      .btn{height:26px;padding:0 8px}.btn.icon{width:26px}
+      .topbar .title{max-width:40vw;overflow:hidden;text-overflow:ellipsis}
     }
-    .btn:hover{filter:brightness(1.2);}
-    .btn:active{transform:translateY(1px);}
-    .btn[disabled]{opacity:.5;cursor:not-allowed;filter:grayscale(.6) saturate(.5);}
-    .btn:focus{outline:2px solid var(--highlight);outline-offset:2px;}
-    .p1{--bg1:#ff6bb5;--bg2:#c43e7a;--text:#fff;}
-    .p2{--bg1:#7ad6ff;--bg2:#2a97d8;--text:#fff;}
-    .ghost{--bg1:#1a1d31;--bg2:#0f1223;--text:#aeb6e9;}
-
-    main{flex:1;display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:12px;padding:12px;align-items:flex-start;}
-    .side{display:grid;gap:12px;max-width:300px;width:100%;}
-    .center{display:grid;gap:12px;grid-template-rows:1fr;}
-    .panel{
-      background:var(--panel);
-      border:1px solid var(--border);
-      position:relative;
-      padding:8px;
-    }
-    .panel::before{
-      content:"";position:absolute;inset:1px;border:1px solid rgba(255,255,255,.08);pointer-events:none;
-    }
-    .avatar{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;}
-    .avatar .name{font-weight:700;color:#e9edff;font-size:14px;margin-bottom:4px;}
-    .avatar .stats{font-size:12px;color:var(--muted);}    
-    .pixel{image-rendering: pixelated; image-rendering: crisp-edges;}
-    /* Вертикальное меню игр */
-    .vlist{display:grid;gap:8px;overflow-y:auto;padding:4px;height:100%;}
-    .vcard{appearance:none;background:none;border:0;padding:0;cursor:pointer;transition:filter .2s;}
-    .vcard:hover{filter:brightness(1.2);}
-    .vcard:focus{outline:2px solid var(--highlight);outline-offset:2px;}
-    .vcard canvas{width:100%;height:auto;image-rendering:pixelated;}
-    .gameRoot{height:100%;}
-    .hud{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);}
-    .tag{padding:4px 8px;background:#2b2f5e;border:1px solid #3a3f75;}
-    #hud{position:fixed;bottom:8px;right:8px;pointer-events:none;}
-    #hud *{pointer-events:auto;}
-    @media(max-width:860px){
-      main{grid-template-columns:1fr;grid-template-rows:auto auto;max-width:720px;margin:0 auto;}
-      .side{max-width:none;}
-      .center{gap:8px;}
-      .vlist{height:calc(100vh - 120px);}
-    }
-
-    .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;}
-    .dialog{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);position:relative;min-width:280px;}
-    .hidden{display:none;}
   </style>
 </head>
 <body>
-  <header>
-    <canvas id="btnAvatar" class="pixel" width="32" height="32" style="width:32px;height:32px;"></canvas>
-    <h1>DeepFly — мини‑игры</h1>
-    <canvas id="btnSettings" class="pixel" width="32" height="32" style="width:32px;height:32px;"></canvas>
-  </header>
-
-  <main>
-      <!-- Левая колонка: профиль и настройки -->
-      <section class="side">
-        <div class="panel avatar">
-          <canvas id="avatar1" class="pixel" width="16" height="16" style="width:96px;height:96px;"></canvas>
-          <div>
-            <div class="name" id="playerName">Игрок</div>
-            <div class="stats" id="playerStats">готов • ♥ 3 • ★ 0</div>
-            <div class="row" style="margin-top:8px">
-              <canvas id="profileSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-              <canvas id="profileReset" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-            </div>
-          </div>
+  <div class="app">
+    <canvas id="bg" class="bg" aria-hidden="true"></canvas>
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div class="title" title="SadSock’s Minigames">SadSock’s&nbsp;Minigames</div>
+      </div>
+      <div class="actions">
+        <button id="btn-full" class="btn icon" title="Полноэкранный режим" aria-label="Полноэкранный режим"><span class="ico ico-full"></span></button>
+        <button id="btn-settings" class="btn icon" title="Настройки" aria-label="Настройки"><span class="ico ico-gear"></span></button>
+        <div class="profile">
+          <canvas id="avatar" class="avatar" width="24" height="24" title="Профиль"></canvas>
+          <span id="nickname" class="nick">@SadSock</span>
         </div>
-      </section>
-      <!-- Центральная колонка: список игр и контейнер игры -->
-      <section class="center">
-        <div id="vmenu" class="panel vlist" role="list"></div>
-        <div id="gameRoot" class="panel gameRoot hidden"></div>
-      </section>
+      </div>
+    </header>
+    <main class="main">
+      <div class="list-wrap">
+        <div id="games" class="list" role="list"></div>
+        <div id="scrollbar" class="scrollbar" aria-hidden="true"><div id="thumb" class="thumb"></div></div>
+      </div>
     </main>
-    <div id="hud" class="panel hud">
-      <span class="tag">v1.0.0</span>
-      <span class="fps" id="fps">FPS –</span>
-    </div>
-  <footer>
-    <small style="color:var(--muted)">Навигация: выбирайте игру в списке или используйте хэш <code>#game=&lt;slug&gt;</code> в адресной строке.</small>
-  </footer>
-
-  <div id="settingsDialog" class="backdrop hidden">
-    <div id="settingsPanel" class="dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-      <canvas id="settingsClose" class="pixel" width="16" height="16" style="position:absolute;top:8px;right:8px;width:16px;height:16px;"></canvas>
-      <h2 id="settingsTitle">Настройки</h2>
-      <label><input type="checkbox" id="muteToggle"> Звук</label><br>
-      <label><input type="checkbox" id="vfxToggle"> Эффекты</label><br>
-      <label><input type="checkbox" id="themeAltToggle"> Альт. тема</label><br>
-      <div class="row" style="margin-top:8px;">
-        <canvas id="settingsSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-        <canvas id="settingsCancel" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-      </div>
-    </div>
+    <footer class="footer"><span>Have fun.</span></footer>
   </div>
-
-  <div id="avatarDialog" class="backdrop hidden">
-    <div id="avatarPanel" class="dialog" role="dialog" aria-modal="true" aria-labelledby="avatarTitle">
-      <canvas id="avatarClose" class="pixel" width="16" height="16" style="position:absolute;top:8px;right:8px;width:16px;height:16px;"></canvas>
-      <h2 id="avatarTitle">Профиль</h2>
-      <input id="nickInput" placeholder="Никнейм" style="font-size:16px;padding:4px;width:100%;margin-bottom:8px;" />
-        <canvas id="avatarEdit" class="pixel" width="16" height="16" style="width:96px;height:96px;margin-bottom:8px;"></canvas>
-      <div class="row" id="avatarControls" style="gap:6px;flex-wrap:wrap">
-        <div><small>Прическа</small><br>
-          <canvas id="hairPrev" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
-          <canvas id="hairNext" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
-        </div>
-        <div><small>Глаза</small><br>
-          <canvas id="eyesPrev" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
-          <canvas id="eyesNext" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
-        </div>
-        <div><small>Рот</small><br>
-          <canvas id="mouthPrev" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
-          <canvas id="mouthNext" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
-        </div>
-        <div><small>Цвет волос</small><br>
-          <canvas id="colorPrev" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
-          <canvas id="colorNext" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
-        </div>
-      </div>
-      <div class="row" style="margin-top:8px;">
-        <canvas id="avatarSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-        <canvas id="avatarCancel" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <script type="module">
-  /*
-    Базовый SPA‑хаб: управляет темой, хранит настройки, загружает игровые
-    модули и передаёт им контекст. Каждая игра экспортирует manifest +
-    mount/unmount и живёт в каталоге games/<slug>/.
-  */
-  const HUB_VERSION = '1.0.0';
-
-  const $ = (sel) => document.querySelector(sel);
-
-  // Универсальная канвас-кнопка
-  function makeCanvasButton(canvas, { label, drawIcon, onClick, fontPx=10, width=canvas.width, height=canvas.height }){
-    const ctx = canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
-    canvas.width = width; canvas.height = height;
-    let st = 0; let enabled = true;
-    function draw(){
-      const bg = ['#1a1d31','#232742','#0f1223'][st];
-      ctx.clearRect(0,0,width,height);
-      ctx.fillStyle = bg; ctx.fillRect(0,0,width,height);
-      ctx.strokeStyle = '#000'; ctx.strokeRect(0.5,0.5,width-1,height-1);
-      if(drawIcon){
-        drawIcon(ctx, st);
-      } else {
-        ctx.fillStyle = enabled ? '#e6ebff' : '#8c92b8';
-        ctx.font = `${fontPx}px ui-monospace`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(label, width/2, height/2+1);
-      }
-    }
-    function setEnabled(v){ enabled = !!v; draw(); }
-    function setLabel(v){ label = v; canvas.setAttribute('aria-label', v); draw(); }
-    canvas.tabIndex = 0; canvas.setAttribute('role','button'); if(label) canvas.setAttribute('aria-label', label);
-    canvas.addEventListener('pointerenter',()=>{ if(enabled){ st=1; draw(); } });
-    canvas.addEventListener('pointerleave',()=>{ if(enabled){ st=0; draw(); } });
-    canvas.addEventListener('pointerdown',e=>{ if(enabled){ e.preventDefault(); st=2; draw(); } });
-    canvas.addEventListener('pointerup',()=>{ if(enabled){ st=1; draw(); onClick && onClick(); } });
-    canvas.addEventListener('keydown',e=>{ if(enabled && (e.key==='Enter'||e.key===' ')){ onClick && onClick(); } });
-    draw();
-    return { setEnabled, setLabel };
-  }
-
-  // Простая тема: dark и alternative
-  const theme = {
-    current: 'dark',
-    apply(name){
-      this.current = name;
-      const set=(k,v)=>document.documentElement.style.setProperty(k,v);
-      if(name === 'alt'){
-        set('--bg','#21264a'); set('--panel','#2b3270');
-        set('--grid-even','#333a86'); set('--grid-odd','#2a3179');
-        set('--border','#3a4292'); set('--highlight','#ffd5a3');
-        set('--ink','#f0f3ff'); set('--muted','#b4bced');
-      } else {
-        set('--bg','#1b1e35'); set('--panel','#252b50');
-        set('--grid-even','#2b2f5e'); set('--grid-odd','#22254a');
-        set('--border','#2f3464'); set('--highlight','#ffe680');
-        set('--ink','#e8ebff'); set('--muted','#9aa5d9');
-      }
-      const meta=document.querySelector('#themeColor');
-      if(meta) meta.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--bg').trim());
-    },
-    toggle(){ const next=this.current==='dark'?'alt':'dark'; this.apply(next); return next; }
-  };
-
-  // Примитивный шина событий
-  const bus = new EventTarget();
-
-  // хранилище настроек/прогресса (IndexedDB можно добавить позже)
-  const store = {
-    prefix:'deepfly.',
-    get(key, def){ try{ const v = localStorage.getItem(this.prefix+key); return v ? JSON.parse(v) : def; }catch(_){ return def; } },
-    set(key,val){ localStorage.setItem(this.prefix+key, JSON.stringify(val)); },
-    del(key){ localStorage.removeItem(this.prefix+key); }
-  };
-
-  const settings = { mute:false, vfx:true, theme:'dark' };
-
-  // Мини‑тост
-  function flash(text){
-    const el = document.createElement('div');
-    el.textContent = text;
-    el.style.cssText = `position:fixed;left:50%;top:20px;transform:translateX(-50%);background:#1e2244;border:1px solid #2c325a;color:#e6ebff;padding:8px 12px;border-radius:0;font-size:12px;z-index:999;opacity:0;transition:opacity .2s ease`;
-    document.body.appendChild(el);
-    requestAnimationFrame(()=>{ el.style.opacity='1'; });
-    setTimeout(()=>{ el.style.opacity='0'; }, 2200);
-    setTimeout(()=>{ el.remove(); }, 2600);
-  }
-
-  function openDialog(sel, opener){
-    const wrap = typeof sel==='string'?$(sel):sel;
-    const prev = opener || document.activeElement;
-    wrap.classList.remove('hidden');
-    const focusable = Array.from(wrap.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')).filter(el=>!el.disabled);
-    const first = focusable[0];
-    const last = focusable[focusable.length-1];
-    if(first) first.focus();
-    const inertEls = Array.from(document.body.children).filter(el=>el!==wrap);
-    inertEls.forEach(el=>el.inert=true);
-    function onKey(e){
-      if(e.key==='Escape'){ close(); }
-      else if(e.key==='Tab'){
-        if(focusable.length===0){ e.preventDefault(); return; }
-        if(e.shiftKey){
-          if(document.activeElement===first){ last.focus(); e.preventDefault(); }
-        }else{
-          if(document.activeElement===last){ first.focus(); e.preventDefault(); }
+  <script>
+    // ——— Параметры ———
+    const NICKNAME = "@SadSock";
+    const GAMES = [
+      {id:"pong",title:"Pong 8-bit",desc:"Классика на квадратиках",href:"#pong"},
+      {id:"runner",title:"Runner 1-bit",desc:"Прыгай, чтобы не умереть",href:"#runner"},
+      {id:"breakout",title:"Breakout 160p",desc:"Разноси блоки — живи",href:"#breakout"},
+      {id:"rogue",title:"RogueGrid",desc:"Клеточки, боль, кайф",href:"#rogue"},
+      {id:"tactics",title:"Micro Tactics",desc:"Тактика в пикселях",href:"#tactics"}
+    ];
+    // ——— DOM ———
+    const bg=document.getElementById("bg"),
+          gamesEl=document.getElementById("games"),
+          bar=document.getElementById("scrollbar"),
+          thumb=document.getElementById("thumb"),
+          btnFull=document.getElementById("btn-full"),
+          btnSettings=document.getElementById("btn-settings"),
+          avatar=document.getElementById("avatar"),
+          nickname=document.getElementById("nickname");
+    nickname.textContent=NICKNAME;
+    // ——— Фон в пикселях ———
+    (function(){const c=bg.getContext("2d");let w,h,t=0,px=6;
+      function rs(){w=bg.width=Math.ceil(innerWidth/px);h=bg.height=Math.ceil(innerHeight/px);c.imageSmoothingEnabled=false}
+      addEventListener("resize",rs,{passive:true}); rs();
+      (function loop(){
+        for(let y=0;y<h;y++){for(let x=0;x<w;x++){
+          const v=Math.sin((x*.15+t)*.25)+Math.cos((y*.13-t)*.22);
+          const cc=12+Math.floor((v+2)*16);
+          c.fillStyle=`rgb(${cc},${cc+8},${cc+16})`;
+          c.fillRect(x,y,1,1);
+        }} t+=.8; bg.style.width="100%"; bg.style.height="100%";
+        requestAnimationFrame(loop);
+      })();
+    })();
+    // ——— Пиксель-аватар (симметричный, с лёгкой анимацией) ———
+    (function(){const c=avatar.getContext("2d"),S=24,CELL=3; c.imageSmoothingEnabled=false;
+      function draw(t=0){c.clearRect(0,0,S,S);
+        const cols=5,rows=6; const sx=((S/CELL)-cols)/2|0, sy=((S/CELL)-rows)/2|0;
+        for(let y=0;y<rows;y++){
+          const hue=(t*2+y*20)%360, col=`hsl(${hue},80%,70%)`;
+          for(let x=0;x<Math.ceil(cols/2);x++){
+            const v=((x*y+t)%3)!==0; if(!v) continue;
+            c.fillStyle=col;
+            c.fillRect((sx+x)*CELL,(sy+y)*CELL,CELL,CELL);
+            const mx=(sx+(cols-1-x))*CELL;
+            c.fillRect(mx,(sy+y)*CELL,CELL,CELL);
+          }
         }
       }
-    }
-    function onClick(e){ if(e.target===wrap){ close(); } }
-    function close(){
-      wrap.classList.add('hidden');
-      document.removeEventListener('keydown',onKey);
-      wrap.removeEventListener('click',onClick);
-      inertEls.forEach(el=>el.inert=false);
-      prev && prev.focus();
-    }
-    document.addEventListener('keydown',onKey);
-    wrap.addEventListener('click',onClick);
-    return { close };
-  }
-
-  // Аватары с частями лица
-  function px(ctx,x,y,s,color){ ctx.fillStyle=color; ctx.fillRect(x*s,y*s,s,s); }
-  function drawHead(ctx,W,H,S,parts,dy=0){
-      const skin='#f4d7b5', eye='#10131e', mouth='#7a3b2a';
-      ctx.clearRect(0,0,W*S,H*S);
-      for(let x=6;x<10;x++) px(ctx,x,11+dy,S,skin);
-      px(ctx,2,6+dy,S,skin); px(ctx,13,6+dy,S,skin);
-      const rows=[[5,10],[4,11],[3,12],[3,12],[3,12],[3,12],[4,11],[5,10]];
-      for(let i=0;i<rows.length;i++){
-        const y=3+i+dy; const [a,b]=rows[i];
-        for(let x=a;x<b;x++) px(ctx,x,y,S,skin);
-      }
-      switch(parts.mouth){
-        case 0: px(ctx,7,9+dy,S,mouth); break;
-        case 1: px(ctx,7,9+dy,S,mouth); px(ctx,8,9+dy,S,mouth); break;
-        case 2: for(let x=7;x<10;x++) px(ctx,x,9+dy,S,mouth); break;
-        case 3: px(ctx,7,10+dy,S,mouth); px(ctx,8,10+dy,S,mouth); break;
-      }
-      switch(parts.eyes){
-        case 0:
-          px(ctx,5,6+dy,S,eye); px(ctx,6,6+dy,S,eye);
-          px(ctx,9,6+dy,S,eye); px(ctx,10,6+dy,S,eye);
-          break;
-        case 1:
-          px(ctx,5,6+dy,S,eye); px(ctx,10,6+dy,S,eye);
-          break;
-        case 2:
-          for(let y=6;y<8;y++){ px(ctx,5,y+dy,S,eye); px(ctx,10,y+dy,S,eye); }
-          break;
-        case 3:
-          px(ctx,5,6+dy,S,eye); px(ctx,6,6+dy,S,eye);
-          px(ctx,9,6+dy,S,eye); px(ctx,10,6+dy,S,eye);
-          px(ctx,5,7+dy,S,eye); px(ctx,10,7+dy,S,eye);
-          break;
-      }
-      ctx.fillStyle='rgba(255,255,255,0.15)';
-      ctx.fillRect(5*S,(4+dy)*S,S,S);
-      const hair=hairPalette[parts.hairColor%hairPalette.length];
-      switch(parts.hairStyle){
-        case 0:
-          for(let x=3;x<13;x++) px(ctx,x,2+dy,S,hair);
-          for(let x=4;x<12;x++) px(ctx,x,3+dy,S,hair);
-          break;
-        case 1:
-          for(let x=3;x<13;x++) px(ctx,x,2+dy,S,hair);
-          for(let x=4;x<12;x++) px(ctx,x,3+dy,S,hair);
-          px(ctx,4,4+dy,S,hair); px(ctx,11,4+dy,S,hair);
-          break;
-        case 2:
-          for(let x=3;x<13;x++) px(ctx,x,2+dy,S,hair);
-          for(let x=4;x<12;x++) px(ctx,x,3+dy,S,hair);
-          px(ctx,13,4+dy,S,hair); px(ctx,14,5+dy,S,hair);
-          break;
-        case 3:
-          for(let x=3;x<13;x++) px(ctx,x,2+dy,S,hair);
-          for(let x=4;x<12;x++) px(ctx,x,3+dy,S,hair);
-          px(ctx,5,1+dy,S,hair); px(ctx,7,1+dy,S,hair);
-          px(ctx,9,1+dy,S,hair); px(ctx,11,1+dy,S,hair);
-          break;
-        case 4:
-          for(let x=3;x<13;x++) px(ctx,x,2+dy,S,hair);
-          for(let x=4;x<12;x++) px(ctx,x,3+dy,S,hair);
-          for(let y=3;y<6;y++) px(ctx,3,y+dy,S,hair);
-          break;
-        case 5:
-          for(let x=3;x<13;x++) px(ctx,x,2+dy,S,hair);
-          for(let x=4;x<12;x++) px(ctx,x,3+dy,S,hair);
-          px(ctx,3,4+dy,S,hair); px(ctx,12,4+dy,S,hair);
-          px(ctx,3,5+dy,S,hair); px(ctx,12,5+dy,S,hair);
-          break;
-      }
-      ctx.globalAlpha=.15; ctx.fillStyle='#000'; ctx.fillRect(0,0,W*S,1*S); ctx.globalAlpha=1;
-    }
-    function makeAvatar(canvas, parts){
-      const ac = canvas.getContext('2d'); ac.imageSmoothingEnabled=false;
-      const W=16,H=16; const S=Math.floor(canvas.width/16);
-      let tick=0; let cur={...parts};
-      function step(){
-        tick++;
-        const dy=Math.round(Math.sin(tick/60));
-        drawHead(ac,W,H,S,cur,dy);
-        requestAnimationFrame(step);
-      }
-      step();
-      return { setParts(p){ cur={...cur,...p}; } };
-    }
-    const hairPalette = ['#ff5ca8','#68c7ff','#ffd166','#7aff9e','#c29eff','#ff8c42'];
-    const avatar1 = makeAvatar($('#avatar1'), {hairStyle:0,eyes:0,mouth:0,hairColor:0});
-
-  // Роутинг: загрузка игрового модуля по хэшу без dynamic import
-  let currentGame = null;
-  async function loadGameModule(slug) {
-    if (window.__DeepFlyGames && window.__DeepFlyGames[slug]) return window.__DeepFlyGames[slug];
-    return new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = `./games/${slug}/module.js`;
-      s.onload = () => {
-        if (window.__DeepFlyGames && window.__DeepFlyGames[slug]) resolve(window.__DeepFlyGames[slug]);
-        else reject(new Error(`Модуль ${slug} не зарегистрирован`));
-      };
-      s.onerror = () => reject(new Error(`Не удалось загрузить games/${slug}/module.js`));
-      document.head.appendChild(s);
-    });
-  }
-  const gameRoot = $('#gameRoot');
-  async function loadFromHash(){
-    const m = location.hash.match(/game=([\w-]+)/);
-    if(!m){
-      if(currentGame && currentGame.unmount) currentGame.unmount();
-      currentGame = null;
-      gameRoot.classList.add('hidden');
-      $('#vmenu').style.display = 'grid';
-      document.querySelectorAll('.side').forEach(el => el.style.display = '');
-      return;
-    }
-    const slug = m[1];
-    try{
-      const mod = await loadGameModule(slug);
-      if(currentGame && currentGame.unmount) currentGame.unmount();
-      $('#vmenu').style.display = 'none';
-      gameRoot.classList.remove('hidden');
-      document.querySelectorAll('.side').forEach(el => el.style.display = '');
-      currentGame = await mod.mount(gameRoot, getContext());
-    }catch(err){
-      console.error(err);
-      flash(`Не удалось загрузить игру «${slug}»: ${err?.message || ''}`);
-      location.hash = '';
-    }
-  }
-  window.addEventListener('hashchange', loadFromHash);
-  window.addEventListener('keydown', e => { if(e.key === 'Escape' && location.hash.includes('game=')) location.hash=''; });
-  loadFromHash();
-
-  let fpsCounter=0, fpsLast=performance.now();
-  function trackFPS(){
-    const now=performance.now(); fpsCounter++;
-    if(now - fpsLast > 500){
-      $('#fps').textContent = `FPS ${Math.round(fpsCounter*1000/(now-fpsLast))}`;
-      fpsCounter=0; fpsLast=now;
-    }
-    requestAnimationFrame(trackFPS);
-  }
-  trackFPS();
-  
-  // Контекст, передаваемый в игры
-  function getContext(){
-    return {
-      version: HUB_VERSION,
-      bus,
-      theme,
-      store,
-      ui:{ flash },
-      input: {
-        // упрощённый ввод: подписка на клавиши
-        on(type, handler){ window.addEventListener(type, handler); },
-        off(type, handler){ window.removeEventListener(type, handler); }
-      },
-      net:{ rest: async ()=>{ throw new Error('REST не настроен'); }, rt:{ connect:()=>({ publish(){}, subscribe(){}, close(){} }) } },
-      root: $('#gameRoot')
-    };
-  }
-
-  // Профиль
-    const wrap=(v,min,max)=>(v<min?max:(v>max?min:v));
-    const clamp=(v,min,max)=>(v<min?min:(v>max?max:v));
-    const HAIR_STYLES=6, EYE_STYLES=4, MOUTH_STYLES=4;
-    function validateAvatar(a){
-      a.hairStyle=clamp(a.hairStyle,0,HAIR_STYLES-1);
-      a.eyes=clamp(a.eyes,0,EYE_STYLES-1);
-      a.mouth=clamp(a.mouth,0,MOUTH_STYLES-1);
-      a.hairColor=clamp(a.hairColor,0,hairPalette.length-1);
-    }
-    let profile = {
-      id: store.get('profile.id', Date.now()),
-      nickname: store.get('profile.nickname','Игрок'),
-      avatar: store.get('profile.avatar',{hairStyle:0,eyes:0,mouth:0,hairColor:0})
-    };
-    validateAvatar(profile.avatar);
-    store.set('profile.id', profile.id);
-    $('#playerName').textContent = profile.nickname;
-    avatar1.setParts(profile.avatar);
-    const avatarEdit = makeAvatar($('#avatarEdit'), profile.avatar);
-
-    let avatarDlg=null;
-    function openAvatarPanel(opener){
-      $('#nickInput').value = profile.nickname;
-      validateAvatar(profile.avatar);
-      avatarEdit.setParts(profile.avatar);
-      avatarDlg = openDialog('#avatarDialog', opener);
-    }
-    makeCanvasButton($('#hairPrev'),{label:'◀',onClick(){ profile.avatar.hairStyle = wrap(profile.avatar.hairStyle-1,0,HAIR_STYLES-1); avatarEdit.setParts(profile.avatar); }});
-  $('#hairPrev').setAttribute('aria-label','Предыдущая прическа');
-    makeCanvasButton($('#hairNext'),{label:'▶',onClick(){ profile.avatar.hairStyle = wrap(profile.avatar.hairStyle+1,0,HAIR_STYLES-1); avatarEdit.setParts(profile.avatar); }});
-  $('#hairNext').setAttribute('aria-label','Следующая прическа');
-    makeCanvasButton($('#eyesPrev'),{label:'◀',onClick(){ profile.avatar.eyes = wrap(profile.avatar.eyes-1,0,EYE_STYLES-1); avatarEdit.setParts(profile.avatar); }});
-  $('#eyesPrev').setAttribute('aria-label','Предыдущие глаза');
-    makeCanvasButton($('#eyesNext'),{label:'▶',onClick(){ profile.avatar.eyes = wrap(profile.avatar.eyes+1,0,EYE_STYLES-1); avatarEdit.setParts(profile.avatar); }});
-  $('#eyesNext').setAttribute('aria-label','Следующие глаза');
-    makeCanvasButton($('#mouthPrev'),{label:'◀',onClick(){ profile.avatar.mouth = wrap(profile.avatar.mouth-1,0,MOUTH_STYLES-1); avatarEdit.setParts(profile.avatar); }});
-  $('#mouthPrev').setAttribute('aria-label','Предыдущий рот');
-    makeCanvasButton($('#mouthNext'),{label:'▶',onClick(){ profile.avatar.mouth = wrap(profile.avatar.mouth+1,0,MOUTH_STYLES-1); avatarEdit.setParts(profile.avatar); }});
-  $('#mouthNext').setAttribute('aria-label','Следующий рот');
-    makeCanvasButton($('#colorPrev'),{label:'◀',onClick(){ profile.avatar.hairColor = wrap(profile.avatar.hairColor-1,0,hairPalette.length-1); avatarEdit.setParts(profile.avatar); }});
-  $('#colorPrev').setAttribute('aria-label','Предыдущий цвет');
-    makeCanvasButton($('#colorNext'),{label:'▶',onClick(){ profile.avatar.hairColor = wrap(profile.avatar.hairColor+1,0,hairPalette.length-1); avatarEdit.setParts(profile.avatar); }});
-  $('#colorNext').setAttribute('aria-label','Следующий цвет');
-  function saveProfile(){
-      profile.nickname = $('#nickInput').value.trim() || 'Игрок';
-      validateAvatar(profile.avatar);
-      store.set('profile.nickname', profile.nickname);
-      store.set('profile.avatar', profile.avatar);
-      $('#playerName').textContent = profile.nickname;
-      avatar1.setParts(profile.avatar);
-  }
-  makeCanvasButton($('#profileSave'),{label:'Профиль',onClick(){ openAvatarPanel($('#profileSave')); }});
-  makeCanvasButton($('#avatarSave'),{label:'Сохранить',onClick(){ saveProfile(); avatarDlg && avatarDlg.close(); }});
-  makeCanvasButton($('#avatarCancel'),{label:'Отмена',onClick(){ avatarDlg && avatarDlg.close(); }});
-  makeCanvasButton($('#avatarClose'),{label:'×',onClick(){ avatarDlg && avatarDlg.close(); }});
-  $('#avatarClose').setAttribute('aria-label','Закрыть');
-    makeCanvasButton($('#profileReset'),{label:'Сброс',onClick(){
-      store.del('profile.nickname'); store.del('profile.avatar');
-      profile = { id: profile.id, nickname:'Игрок', avatar:{hairStyle:0,eyes:0,mouth:0,hairColor:0} };
-      validateAvatar(profile.avatar);
-      $('#playerName').textContent = profile.nickname; avatar1.setParts(profile.avatar);
-    }});
-
-  // Настройки
-  settings.mute = store.get('settings.mute', false);
-  settings.vfx = store.get('settings.vfx', true);
-  settings.theme = store.get('settings.theme', 'dark');
-  theme.apply(settings.theme);
-  $('#muteToggle').checked = settings.mute;
-  $('#vfxToggle').checked = settings.vfx;
-  $('#themeAltToggle').checked = settings.theme==='alt';
-  let settingsDlg=null;
-  makeCanvasButton($('#settingsSave'),{label:'Сохранить',onClick(){
-    settings.mute = $('#muteToggle').checked;
-    settings.vfx = $('#vfxToggle').checked;
-    settings.theme = $('#themeAltToggle').checked ? 'alt' : 'dark';
-    store.set('settings.mute', settings.mute);
-    store.set('settings.vfx', settings.vfx);
-    store.set('settings.theme', settings.theme);
-    theme.apply(settings.theme);
-    settingsDlg && settingsDlg.close();
-  }});
-  makeCanvasButton($('#settingsCancel'),{label:'Отмена',onClick(){ settingsDlg && settingsDlg.close(); }});
-  makeCanvasButton($('#settingsClose'),{label:'×',onClick(){ settingsDlg && settingsDlg.close(); }});
-  $('#settingsClose').setAttribute('aria-label','Закрыть');
-
-  // Вертикальное меню игр
-    function drawGameIcon(ctx, slug){
-      const styles=getComputedStyle(document.documentElement);
-      const even=styles.getPropertyValue('--grid-even').trim();
-      const odd=styles.getPropertyValue('--grid-odd').trim();
-      for(let y=0;y<48;y+=6){
-        for(let x=0;x<48;x+=6){ ctx.fillStyle=((x+y)/6%2===0)?odd:even; ctx.fillRect(x,y,6,6); }
-      }
-      if(slug==='pong'){
-      ctx.fillStyle='#ff77bd'; ctx.fillRect(4,8,6,32);
-      ctx.fillStyle='#68c7ff'; ctx.fillRect(38,8,6,32);
-      ctx.fillStyle='#ffd166'; ctx.fillRect(22,22,4,4);
-    }
-    if(slug==='runner'){
-      ctx.fillStyle='#ff77bd'; ctx.fillRect(16,28,12,16);
-      ctx.fillStyle='#ffd166'; ctx.fillRect(16,20,12,8);
-      ctx.fillStyle='#ff6b6b'; ctx.fillRect(36,18,12,28);
-    }
-  }
-  function drawGameTile(ctx,{slug,title,caption,state,pulse=0,scan=0}){
-    const w=192,h=64;
-    const styles=getComputedStyle(document.documentElement);
-    const even=styles.getPropertyValue('--grid-even').trim();
-    const odd=styles.getPropertyValue('--grid-odd').trim();
-    for(let y=0;y<h;y+=8){ for(let x=0;x<w;x+=8){ ctx.fillStyle=((x+y)/8%2===0)?odd:even; ctx.fillRect(x,y,8,8);} }
-    let border = styles.getPropertyValue('--border');
-    if(state===2) border='#ffd166';
-    else if(state===1) border=`rgba(255,209,102,${0.4+0.6*pulse})`;
-    ctx.strokeStyle=border; ctx.strokeRect(0.5,0.5,w-1,h-1);
-    ctx.globalAlpha=0.3+0.3*pulse; ctx.strokeStyle=styles.getPropertyValue('--highlight');
-    ctx.strokeRect(2.5,2.5,w-5,h-5); ctx.globalAlpha=1;
-    const sy=Math.floor(scan)%h;
-    ctx.fillStyle='rgba(255,255,255,0.06)';
-    ctx.fillRect(1,sy,w-2,1);
-    ctx.save(); ctx.translate(8,8); drawGameIcon(ctx,slug); ctx.restore();
-    ctx.fillStyle='#e6ebff'; ctx.font='14px ui-monospace'; ctx.textBaseline='top'; ctx.fillText(title,64,16);
-    ctx.fillStyle=styles.getPropertyValue('--muted'); ctx.font='10px ui-monospace'; ctx.fillText(caption,64,34);
-  }
-  const GAME_SLUGS = ['pong','runner'];
-  function buildVMenu(){
-    const menu=$('#vmenu'); menu.innerHTML='';
-    GAME_SLUGS.forEach(slug=>{
-      const btn=document.createElement('button'); btn.role='listitem'; btn.className='vcard'; btn.tabIndex=0; btn.dataset.slug=slug;
-      const cv=document.createElement('canvas'); const dpr=Math.max(1,window.devicePixelRatio||1);
-      cv.className='pixel'; cv.width=192*dpr; cv.height=64*dpr; cv.style.width='192px'; cv.style.height='64px';
-      btn.appendChild(cv);
-      menu.appendChild(btn);
-      let st=0; let pulseT=0; let raf=null; let title=slug; let caption='';
-      const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false; ctx.scale(dpr,dpr);
-      function redraw(){ drawGameTile(ctx,{slug,title,caption,state:st,pulse:(Math.sin(pulseT)+1)/2,scan:pulseT}); }
-      function step(){ if(st===1){ pulseT+=0.1; redraw(); raf=requestAnimationFrame(step);} }
-      redraw();
-      btn.addEventListener('pointerenter',()=>{st=1; pulseT=0; redraw(); step();});
-      btn.addEventListener('pointerleave',()=>{st=0; redraw(); cancelAnimationFrame(raf);});
-      btn.addEventListener('pointerdown',e=>{e.preventDefault();st=2;redraw();});
-      btn.addEventListener('pointerup',()=>{st=1;redraw();location.hash=`game=${slug}`;step();});
-      btn.addEventListener('keydown',e=>{
-        if(e.key==='Enter'){ e.preventDefault(); location.hash=`game=${slug}`; }
-        if(e.key==='ArrowDown'||e.key==='ArrowUp'){
-          const cards=Array.from($('#vmenu').querySelectorAll('.vcard'));
-          const idx=cards.indexOf(document.activeElement);
-          if(e.key==='ArrowDown'){ const n=Math.min(cards.length-1,idx+1); cards[n]?.focus(); }
-          if(e.key==='ArrowUp'){ const n=Math.max(0,idx-1); cards[n]?.focus(); }
-          e.preventDefault();
-        }
+      let k=0; setInterval(()=>draw(++k),140); draw();
+    })();
+    // ——— Рендер списка игр ———
+    (function render(){const f=document.createDocumentFragment();
+      GAMES.forEach(g=>{
+        const el=document.createElement("div");
+        el.className="item"; el.setAttribute("role","listitem");
+        el.innerHTML=`<div class="icon-cell" aria-hidden="true"></div>
+          <div class="meta">
+            <div class="item-title">${g.title}</div>
+            <div class="item-desc">${g.desc}</div>
+          </div>
+          <div class="item-play"><a class="btn" href="${g.href}" data-id="${g.id}">Играть</a></div>`;
+        f.appendChild(el);
       });
-      btn.addEventListener('focus',()=>{ btn.scrollIntoView({block:'nearest',inline:'nearest'}); });
-      btn.setAttribute('aria-label', slug);
-      loadGameModule(slug).then(mod=>{
-        const man=mod.manifest||{slug};
-        title=man.name||slug; caption=man.caption||'';
-        btn.setAttribute('aria-label', man.name||slug);
-        redraw();
-      }).catch(err=>console.error(err));
+      gamesEl.appendChild(f);
+    })();
+    // ——— Кастомная прокрутка (тач/колесо/ползунок) ———
+    (function(){
+      const wrap=gamesEl; let scroll=0; const line=36;
+      function clamp(v,min,max){return v<min?min:v>max?max:v}
+      function contentH(){return Array.from(wrap.children).reduce((h,el)=>h+el.offsetHeight,0)}
+      function vp(){return wrap.clientHeight}
+      function maxS(){return Math.max(0,contentH()-vp())}
+      function apply(){
+        wrap.style.transform=`translateY(${-scroll|0}px)`;
+        const h=vp(), total=contentH(), ratio=h/Math.max(h,total);
+        const trackH=bar.clientHeight, th=Math.max(40,(trackH*ratio)|0);
+        const y=(maxS()?(scroll/maxS()):0)*(trackH-th);
+        thumb.style.height=`${th}px`; thumb.style.top=`${y|0}px`;
+      }
+      function onWheel(e){e.preventDefault(); scroll=clamp(scroll+(e.deltaY>0?line:-line),0,maxS()); apply()}
+      function onTouchStart(e){
+        let sy=e.touches[0].clientY, base=scroll;
+        function mv(ev){const y=ev.touches[0].clientY; scroll=clamp(base+(sy-y),0,maxS()); apply()}
+        function ed(){document.removeEventListener("touchmove",mv); document.removeEventListener("touchend",ed)}
+        document.addEventListener("touchmove",mv,{passive:false}); document.addEventListener("touchend",ed,{passive:true})
+      }
+      wrap.addEventListener("wheel",onWheel,{passive:false});
+      wrap.addEventListener("touchstart",onTouchStart,{passive:false});
+      (function(){let sy=0,base=0;
+        function mv(e){const dy=(e.clientY-sy), track=(bar.clientHeight-thumb.clientHeight), ratio=maxS()/Math.max(1,track);
+          scroll=clamp(base+dy*ratio,0,maxS()); apply()}
+        function up(){document.removeEventListener("mousemove",mv); document.removeEventListener("mouseup",up); thumb.style.cursor="grab"}
+        thumb.addEventListener("mousedown",e=>{sy=e.clientY;base=scroll; document.addEventListener("mousemove",mv); document.addEventListener("mouseup",up); thumb.style.cursor="grabbing"})
+      })();
+      addEventListener("resize",()=>apply()); requestAnimationFrame(apply);
+    })();
+    // ——— Fullscreen toggle ———
+    document.getElementById("btn-full").addEventListener("click",async()=>{
+      const el=document.documentElement;
+      try{ if(!document.fullscreenElement){await el.requestFullscreen()} else {await document.exitFullscreen()} }catch(e){}
     });
-  }
-  buildVMenu();
-
-  // Заголовок
-  function drawGear(ctx,state=0){
-    ctx.clearRect(0,0,32,32);
-    ctx.fillStyle='#e6ebff';
-    ctx.fillRect(14,4,4,24);
-    ctx.fillRect(4,14,24,4);
-    if(state>0){
-      ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--highlight');
-      ctx.lineWidth=1; ctx.strokeRect(1.5,1.5,ctx.canvas.width-3,ctx.canvas.height-3);
-    }
-  }
-  function drawHeadIcon(ctx,state=0){
-    ctx.clearRect(0,0,32,32);
-    ctx.fillStyle='#ffd166';
-    ctx.fillRect(8,8,16,16);
-    ctx.fillStyle='#10131e';
-    ctx.fillRect(12,12,4,4);
-    ctx.fillRect(20,12,4,4);
-    if(state>0){
-      ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--highlight');
-      ctx.lineWidth=1; ctx.strokeRect(1.5,1.5,ctx.canvas.width-3,ctx.canvas.height-3);
-    }
-  }
-  makeCanvasButton($('#btnSettings'),{drawIcon:drawGear,onClick(){ $('#muteToggle').checked = settings.mute; $('#vfxToggle').checked = settings.vfx; $('#themeAltToggle').checked = settings.theme==='alt'; settingsDlg = openDialog('#settingsDialog', $('#btnSettings')); },width:32,height:32});
-  $('#btnSettings').setAttribute('aria-label','Настройки');
-  makeCanvasButton($('#btnAvatar'),{drawIcon:drawHeadIcon,onClick(){ openAvatarPanel($('#btnAvatar')); },width:32,height:32});
-  $('#btnAvatar').setAttribute('aria-label','Профиль');
-
+    // ——— Settings (заглушка, иконка-шестерня уже пиксельная) ———
+    document.getElementById("btn-settings").addEventListener("click",()=>{alert("Настройки: тема/масштаб/звук — скоро.")});
+    // ——— Мобилки: убираем резиновый скролл страницы ———
+    document.addEventListener("touchmove",e=>{e.preventDefault()},{passive:false});
+    // Принципиально: FPS/версию не считаем и не показываем.
   </script>
 </body>
 </html>
