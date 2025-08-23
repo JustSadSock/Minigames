@@ -102,13 +102,15 @@
       width:100%;aspect-ratio:1/1;
     }
     .scene canvas{border-radius:var(--radius);}
-    /* Горизонтальный список игр */
-    .cards{display:grid;grid-auto-flow:column;grid-auto-columns:clamp(240px,38vw,360px);overflow-x:auto;scroll-snap-type:x mandatory;gap:16px;padding:8px 0;}
-    .card{scroll-snap-align:start;appearance:none;border:0;cursor:pointer;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);color:var(--ink);font-weight:700;font-size:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transition:transform .05s ease,filter .15s ease;touch-action:manipulation;min-width:44px;min-height:44px;}
-    .card .icon{font-size:32px;line-height:1;}
-    .card:hover{filter:saturate(1.2);}
-    .card:active{transform:translateY(2px);}
-    .card:focus{outline:2px solid var(--highlight);outline-offset:2px;}
+    /* Вертикальное меню игр */
+    .vlist{display:grid;gap:12px;overflow-y:auto;padding:8px;max-height:calc(100vh - 180px);}
+    .vcard{appearance:none;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel);color:var(--ink);cursor:pointer;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:12px;padding:10px;min-height:64px;text-align:left;touch-action:manipulation;}
+    .vcard:hover{filter:saturate(1.1);}
+    .vcard:active{transform:translateY(2px);}
+    .vcard:focus{outline:2px solid var(--highlight);outline-offset:2px;}
+    .icon64{width:64px;height:64px;image-rendering:pixelated;}
+    .meta .title{font-weight:700;}
+    .meta .caption{font-size:12px;color:var(--muted);}
     .hud{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);}
     .tag{padding:4px 8px;border-radius:999px;background:#14172a;border:1px solid #232742;}
     @media(max-width:860px){
@@ -117,7 +119,7 @@
     }
 
     .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;}
-    .dialog{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);}
+    .dialog{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);position:relative;min-width:280px;}
     .hidden{display:none;}
   </style>
 </head>
@@ -127,7 +129,6 @@
     <div class="spacer"></div>
     <div class="row">
       <button class="btn ghost" id="themeToggle">Тема</button>
-      <button class="btn ghost" id="openGames">Игры</button>
       <button class="btn ghost" id="openSettings">Настройки</button>
       <button class="btn ghost" id="openAvatar">Аватар</button>
     </div>
@@ -142,18 +143,18 @@
           <div class="name" id="playerName">Игрок</div>
           <div class="stats" id="playerStats">готов • ♥ 3 • ★ 0</div>
           <div class="row" style="margin-top:8px">
-            <button class="btn p1" id="profileSave">Сохранить</button>
+            <button class="btn p1" id="profileSave">Профиль</button>
             <button class="btn ghost" id="profileReset">Сброс</button>
           </div>
         </div>
       </div>
     </section>
-    <!-- Центральная колонка: сцена и меню игр -->
+    <!-- Центральная колонка: сцена и вертикальное меню игр -->
     <section class="center">
       <div class="scene panel" id="scenePanel">
         <canvas id="preview" class="pixel" width="192" height="192"></canvas>
       </div>
-      <div id="menu" class="cards panel"></div>
+      <div id="vmenu" class="panel vlist" role="list"></div>
     </section>
     <!-- Правая колонка: информация и HUD -->
     <section class="side">
@@ -175,7 +176,7 @@
     </section>
   </main>
   <footer>
-    <small style="color:var(--muted)">Навигация: выбирайте игру в меню или используйте хэш <code>#game=&lt;slug&gt;</code> в адресной строке.</small>
+    <small style="color:var(--muted)">Навигация: выбирайте игру в списке или используйте хэш <code>#game=&lt;slug&gt;</code> в адресной строке.</small>
   </footer>
 
   <div id="settingsDialog" class="backdrop hidden">
@@ -196,11 +197,25 @@
     <div id="avatarPanel" class="dialog" role="dialog" aria-modal="true" aria-labelledby="avatarTitle">
       <button class="btn ghost" id="avatarClose" aria-label="Закрыть" style="position:absolute;top:8px;right:8px">×</button>
       <h2 id="avatarTitle">Профиль</h2>
-      <input id="nickInput" style="font-size:16px;padding:4px;width:100%;margin-bottom:8px;" />
+      <input id="nickInput" placeholder="Никнейм" style="font-size:16px;padding:4px;width:100%;margin-bottom:8px;" />
       <canvas id="avatarEdit" class="pixel" width="64" height="64" style="width:64px;height:64px;margin-bottom:8px;"></canvas>
-      <div class="row">
-        <button class="btn ghost" id="avatarPrev">◀</button>
-        <button class="btn ghost" id="avatarNext">▶</button>
+      <div class="row" id="avatarControls" style="gap:6px;flex-wrap:wrap">
+        <div><small>Прическа</small><br>
+          <button class="btn ghost" id="hairPrev" aria-label="Предыдущая прическа">◀</button>
+          <button class="btn ghost" id="hairNext" aria-label="Следующая прическа">▶</button>
+        </div>
+        <div><small>Глаза</small><br>
+          <button class="btn ghost" id="eyesPrev" aria-label="Предыдущие глаза">◀</button>
+          <button class="btn ghost" id="eyesNext" aria-label="Следующие глаза">▶</button>
+        </div>
+        <div><small>Рот</small><br>
+          <button class="btn ghost" id="mouthPrev" aria-label="Предыдущий рот">◀</button>
+          <button class="btn ghost" id="mouthNext" aria-label="Следующий рот">▶</button>
+        </div>
+        <div><small>Цвет волос</small><br>
+          <button class="btn ghost" id="colorPrev" aria-label="Предыдущий цвет">◀</button>
+          <button class="btn ghost" id="colorNext" aria-label="Следующий цвет">▶</button>
+        </div>
       </div>
       <div class="row" style="margin-top:8px;">
         <button class="btn p1" id="avatarSave">Сохранить</button>
@@ -402,45 +417,47 @@
   function stopPreview(){ if(!previewRunning) return; previewRunning=false; if(previewRAF!==null){ cancelAnimationFrame(previewRAF); previewRAF=null; } }
   drawPreviewGrid(); startPreview();
 
-  // Примитивные аватары с лёгким движением глаз
-  function makeAvatar(canvas, tint = '#ff5ca8'){
-    const ac = canvas.getContext('2d'); ac.imageSmoothingEnabled = false;
-    const W=16, H=16, SCALE=4;
-    let currentTint = tint;
-    let tick=0; let pointer=0;
-    function onMove(e){
-      if(!settings.vfx){ pointer=0; return; }
-      const rect = canvas.getBoundingClientRect();
-      const sx = (e.clientX-rect.left)/rect.width - 0.5;
-      pointer = Math.max(-1, Math.min(1, Math.round(sx*2)));
-    }
-    canvas.addEventListener('pointermove', onMove);
-    function step(){
-      tick++;
-      let eyeDx = 0;
-      if(settings.vfx){ eyeDx = Math.round(Math.sin(tick/40)) + pointer; eyeDx = Math.max(-1, Math.min(1, eyeDx)); }
-      else pointer=0;
-      drawSprite(ac,W,H,SCALE,currentTint,0,0,eyeDx);
-      requestAnimationFrame(step);
-    }
-    step();
-    return { setTint(c){ currentTint = c; }, destroy(){ canvas.removeEventListener('pointermove', onMove); } };
-  }
+  // Аватары с частями лица
   function px(ctx,x,y,s,color){ ctx.fillStyle=color; ctx.fillRect(x*s,y*s,s,s); }
-  function drawSprite(ctx,W,H,S,tint,dx,dy,eyeDx){
-    const skin='#f4d7b5'; const hair=tint; const shirt='#2a2f54'; const eye='#10131e';
+  function drawHead(ctx,W,H,S,parts,dx,dy,eyeDx){
+    const skin='#f4d7b5', eye='#10131e', mouth='#7a3b2a';
     ctx.clearRect(0,0,W*S,H*S);
+    // шея/тело
+    const shirt='#2a2f54';
     px(ctx,7+dx,12+dy,S,shirt); px(ctx,8+dx,12+dy,S,shirt);
     px(ctx,7+dx,11+dy,S,shirt); px(ctx,8+dx,11+dy,S,shirt);
+    // голова
     for(let i=5;i<=10;i++) px(ctx,i+dx,7+dy,S,skin);
     for(let i=6;i<=9;i++) px(ctx,i+dx,6+dy,S,skin);
-    for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair);
-    px(ctx,5+dx,6+dy,S,hair); px(ctx,10+dx,6+dy,S,hair);
-    px(ctx,6+dx+eyeDx,7+dy,S,eye); px(ctx,9+dx+eyeDx,7+dy,S,eye);
+    px(ctx,6+dx,8+dy,S,skin); px(ctx,9+dx,8+dy,S,skin);
+    // рот
+    if(parts.mouthStyle===0){ px(ctx,7+dx,9+dy,S,mouth); px(ctx,8+dx,9+dy,S,mouth); }
+    if(parts.mouthStyle===1){ px(ctx,7+dx,9+dy,S,mouth); }
+    if(parts.mouthStyle===2){ px(ctx,7+dx,9+dy,S,mouth); px(ctx,8+dx,9+dy,S,mouth); px(ctx,7+dx,10+dy,S,mouth); px(ctx,8+dx,10+dy,S,mouth); }
+    // глаза
+    if(parts.eyesStyle===0){ px(ctx,6+dx+eyeDx,7+dy,S,eye); px(ctx,9+dx+eyeDx,7+dy,S,eye); }
+    if(parts.eyesStyle===1){ px(ctx,6+dx+eyeDx,7+dy,S,eye); }
+    if(parts.eyesStyle===2){ px(ctx,6+dx+eyeDx,7+dy,S,eye); px(ctx,9+dx+eyeDx,7+dy,S,eye); px(ctx,7+dx,7+dy,S,eye); }
+    // волосы
+    const hair = hairPalette[parts.hairColor%hairPalette.length];
+    if(parts.hairStyle===0){ for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,5+dx,6+dy,S,hair); px(ctx,10+dx,6+dy,S,hair); }
+    if(parts.hairStyle===1){ for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,5+dx,6+dy,S,hair); px(ctx,6+dx,6+dy,S,hair); }
+    if(parts.hairStyle===2){ for(let i=6;i<=9;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,5+dx,6+dy,S,hair); px(ctx,10+dx,6+dy,S,hair); }
+    if(parts.hairStyle===3){ for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,7+dx,4+dy,S,hair); }
     ctx.globalAlpha=.12; ctx.fillStyle='#000'; ctx.fillRect(0,(dy?S:0),W*S,2*S); ctx.globalAlpha=1;
   }
-  const avatar1 = makeAvatar($('#avatar1'), '#ff5ca8');
-  const avatar2 = makeAvatar($('#avatar2'), '#68c7ff');
+  function makeAvatar(canvas, parts){
+    const ac = canvas.getContext('2d'); ac.imageSmoothingEnabled=false;
+    const W=16,H=16,S=4; let pointer=0; let tick=0; let cur={...parts};
+    function onMove(e){ if(!settings.vfx){ pointer=0; return; } const r=canvas.getBoundingClientRect(); const sx=(e.clientX-r.left)/r.width-0.5; pointer=Math.max(-1,Math.min(1,Math.round(sx*2))); }
+    canvas.addEventListener('pointermove', onMove);
+    function step(){ tick++; const eyeDx=settings.vfx?Math.max(-1,Math.min(1,Math.round(Math.sin(tick/40))+pointer)):0; drawHead(ac,W,H,S,cur,0,0,eyeDx); requestAnimationFrame(step); }
+    step();
+    return { setParts(p){ cur={...cur,...p}; }, destroy(){ canvas.removeEventListener('pointermove', onMove); } };
+  }
+  const hairPalette = ['#ff5ca8','#68c7ff','#ffd166','#7aff9e'];
+  const avatar1 = makeAvatar($('#avatar1'), {hairStyle:0,eyesStyle:0,mouthStyle:0,hairColor:0});
+  const avatar2 = makeAvatar($('#avatar2'), {hairStyle:0,eyesStyle:0,mouthStyle:0,hairColor:1});
 
   /*
     Встроенные версии игр.  Чтобы обеспечить работу при открытии файла
@@ -625,9 +642,9 @@
       if(currentGame && currentGame.unmount) currentGame.unmount();
       currentGame = null;
       $('#preview').style.display='block';
-      $('#menu').style.display='grid';
+      $('#vmenu').style.display='grid';
       startPreview();
-      const firstCard = $('#menu .card'); if(firstCard) firstCard.focus();
+      const firstCard = $('#vmenu .vcard'); if(firstCard) firstCard.focus();
       return;
     }
     const slug = m[1];
@@ -646,15 +663,15 @@
       currentGame = await mod.mount($('#scenePanel'), getContext());
       stopPreview();
       $('#preview').style.display='none';
-      $('#menu').style.display='none';
+      $('#vmenu').style.display='none';
     } catch(err) {
       flash(`Не удалось загрузить игру «${slug}». Убедитесь, что папка games/${slug}/module.js существует.`);
       if(currentGame && currentGame.unmount) currentGame.unmount();
       currentGame = null;
       $('#preview').style.display='block';
-      $('#menu').style.display='grid';
+      $('#vmenu').style.display='grid';
       startPreview();
-      const firstCard = $('#menu .card'); if(firstCard) firstCard.focus();
+      const firstCard = $('#vmenu .vcard'); if(firstCard) firstCard.focus();
     }
   }
   window.addEventListener('hashchange', loadFromHash);
@@ -678,53 +695,63 @@
     };
   }
 
-  // Профиль и настройки
-  const colors = ['#ff5ca8','#68c7ff','#ffd166'];
+  // Профиль
   let profile = {
     id: store.get('profile.id', Date.now()),
     nickname: store.get('profile.nickname','Игрок'),
-    avatar: store.get('profile.avatar',0)
+    hairStyle: store.get('profile.hairStyle',0),
+    eyesStyle: store.get('profile.eyesStyle',0),
+    mouthStyle: store.get('profile.mouthStyle',0),
+    hairColor: store.get('profile.hairColor',0)
   };
   store.set('profile.id', profile.id);
   $('#playerName').textContent = profile.nickname;
-  avatar1.setTint(colors[profile.avatar]);
-  const avatarEdit = makeAvatar($('#avatarEdit'), colors[profile.avatar]);
+  avatar1.setParts(profile);
+  const avatarEdit = makeAvatar($('#avatarEdit'), profile);
 
   let avatarDlg=null;
   function openAvatarPanel(opener){
     $('#nickInput').value = profile.nickname;
-    avatarEdit.setTint(colors[profile.avatar]);
+    avatarEdit.setParts(profile);
     avatarDlg = openDialog('#avatarDialog', opener);
   }
-  $('#avatarPrev').onclick = ()=>{ profile.avatar=(profile.avatar+colors.length-1)%colors.length; avatarEdit.setTint(colors[profile.avatar]); };
-  $('#avatarNext').onclick = ()=>{ profile.avatar=(profile.avatar+1)%colors.length; avatarEdit.setTint(colors[profile.avatar]); };
-  $('#avatarSave').onclick = ()=>{
+  const clamp=(v,min,max)=>(v<min?max:(v>max?min:v));
+  $('#hairPrev').onclick = ()=>{ profile.hairStyle = clamp(profile.hairStyle-1,0,3); avatarEdit.setParts(profile); };
+  $('#hairNext').onclick = ()=>{ profile.hairStyle = clamp(profile.hairStyle+1,0,3); avatarEdit.setParts(profile); };
+  $('#eyesPrev').onclick = ()=>{ profile.eyesStyle = clamp(profile.eyesStyle-1,0,2); avatarEdit.setParts(profile); };
+  $('#eyesNext').onclick = ()=>{ profile.eyesStyle = clamp(profile.eyesStyle+1,0,2); avatarEdit.setParts(profile); };
+  $('#mouthPrev').onclick = ()=>{ profile.mouthStyle = clamp(profile.mouthStyle-1,0,2); avatarEdit.setParts(profile); };
+  $('#mouthNext').onclick = ()=>{ profile.mouthStyle = clamp(profile.mouthStyle+1,0,2); avatarEdit.setParts(profile); };
+  $('#colorPrev').onclick = ()=>{ profile.hairColor = clamp(profile.hairColor-1,0,hairPalette.length-1); avatarEdit.setParts(profile); };
+  $('#colorNext').onclick = ()=>{ profile.hairColor = clamp(profile.hairColor+1,0,hairPalette.length-1); avatarEdit.setParts(profile); };
+  function saveProfile(){
     profile.nickname = $('#nickInput').value.trim() || 'Игрок';
     store.set('profile.nickname', profile.nickname);
-    store.set('profile.avatar', profile.avatar);
+    store.set('profile.hairStyle', profile.hairStyle);
+    store.set('profile.eyesStyle', profile.eyesStyle);
+    store.set('profile.mouthStyle', profile.mouthStyle);
+    store.set('profile.hairColor', profile.hairColor);
     $('#playerName').textContent = profile.nickname;
-    avatar1.setTint(colors[profile.avatar]);
-    avatarDlg && avatarDlg.close();
-  };
+    avatar1.setParts(profile);
+  }
+  $('#profileSave').onclick = ()=> openAvatarPanel($('#profileSave'));
+  $('#avatarSave').onclick = ()=>{ saveProfile(); avatarDlg && avatarDlg.close(); };
   $('#avatarCancel').onclick = ()=>{ avatarDlg && avatarDlg.close(); };
   $('#avatarClose').onclick = ()=>{ avatarDlg && avatarDlg.close(); };
-  $('#profileSave').onclick = ()=> openAvatarPanel($('#profileSave'));
-  $('#profileReset').onclick = () => {
-    store.del('profile.nickname');
-    store.del('profile.avatar');
-    profile.nickname = 'Игрок';
-    profile.avatar = 0;
-    $('#playerName').textContent = profile.nickname;
-    avatar1.setTint(colors[0]);
+  $('#profileReset').onclick = ()=>{
+    store.del('profile.nickname'); store.del('profile.hairStyle'); store.del('profile.eyesStyle'); store.del('profile.mouthStyle'); store.del('profile.hairColor');
+    profile = { id: profile.id, nickname:'Игрок', hairStyle:0, eyesStyle:0, mouthStyle:0, hairColor:0 };
+    $('#playerName').textContent = profile.nickname; avatar1.setParts(profile);
   };
 
+  // Настройки
   settings.mute = store.get('settings.mute', false);
   settings.vfx = store.get('settings.vfx', true);
   settings.theme = store.get('settings.theme', 'dark');
   theme.apply(settings.theme);
   $('#muteToggle').checked = settings.mute;
   $('#vfxToggle').checked = settings.vfx;
-  $('#themeAltToggle').checked = settings.theme === 'alt';
+  $('#themeAltToggle').checked = settings.theme==='alt';
   let settingsDlg=null;
   $('#settingsSave').onclick = ()=>{
     settings.mute = $('#muteToggle').checked;
@@ -739,35 +766,44 @@
   $('#settingsCancel').onclick = ()=>{ settingsDlg && settingsDlg.close(); };
   $('#settingsClose').onclick = ()=>{ settingsDlg && settingsDlg.close(); };
 
-  // Меню игр
-  function buildMenu(){
-    const menu = $('#menu');
-    menu.innerHTML='';
+  // Вертикальное меню игр
+  function drawIcon(canvas, slug){
+    const ctx=canvas.getContext('2d'); ctx.imageSmoothingEnabled=false;
+    const W=32,H=32; const styles=getComputedStyle(document.documentElement);
+    const even=styles.getPropertyValue('--grid-even').trim(); const odd=styles.getPropertyValue('--grid-odd').trim();
+    for(let y=0;y<H;y+=8){ for(let x=0;x<W;x+=8){ ctx.fillStyle=((x+y)/8%2===0)?odd:even; ctx.fillRect(x,y,8,8);} }
+    if(slug==='pong'){ ctx.fillStyle='#ff77bd'; ctx.fillRect(2,6,3,20); ctx.fillStyle='#68c7ff'; ctx.fillRect(27,6,3,20); ctx.fillStyle='#ffd166'; ctx.fillRect(15,15,2,2); }
+    if(slug==='runner'){ ctx.fillStyle='#ff77bd'; ctx.fillRect(10,18,4,8); ctx.fillStyle='#ffd166'; ctx.fillRect(10,14,4,4); ctx.fillStyle='#ff6b6b'; ctx.fillRect(22,12,4,12); }
+  }
+  function buildVMenu(){
+    const menu = $('#vmenu'); menu.innerHTML='';
     const slugs=['pong','runner'];
     slugs.forEach(slug=>{
-      const man = (games[slug]&&games[slug].manifest)||{slug};
-      const btn=document.createElement('button');
-      btn.className='card';
-      btn.tabIndex=0;
-      btn.dataset.slug=slug;
-      btn.innerHTML=`<div class="icon">${man.icon||''}</div><div>${man.name||slug}</div><small>${man.caption||''}</small>`;
+      const man=(games[slug]&&games[slug].manifest)||{slug};
+      const btn=document.createElement('button'); btn.role='listitem';
+      btn.className='vcard'; btn.tabIndex=0; btn.dataset.slug=slug;
+      const icon=document.createElement('canvas'); icon.className='pixel icon64'; icon.width=32; icon.height=32; drawIcon(icon,slug);
+      const meta=document.createElement('div'); meta.className='meta'; meta.innerHTML=`<div class="title">${man.name||slug}</div><div class="caption">${man.caption||''}</div>`;
+      btn.appendChild(icon); btn.appendChild(meta);
       btn.addEventListener('click',()=>{ location.hash=`game=${slug}`; });
-      btn.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); location.hash=`game=${slug}`; }});
-      btn.addEventListener('focus',()=>{ btn.scrollIntoView({block:'nearest',inline:'center'}); });
+      btn.addEventListener('keydown',e=>{
+        if(e.key==='Enter'){ e.preventDefault(); location.hash=`game=${slug}`; }
+        if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+          const cards=Array.from($('#vmenu').querySelectorAll('.vcard'));
+          const idx=cards.indexOf(document.activeElement);
+          if(e.key==='ArrowDown'){ const n=Math.min(cards.length-1,idx+1); cards[n]?.focus(); }
+          if(e.key==='ArrowUp'){ const n=Math.max(0,idx-1); cards[n]?.focus(); }
+          e.preventDefault();
+        }
+      });
+      btn.addEventListener('focus',()=>{ btn.scrollIntoView({block:'nearest',inline:'nearest'}); });
       btn.setAttribute('aria-label', man.name||slug);
       menu.appendChild(btn);
     });
   }
-  buildMenu();
-  $('#menu').addEventListener('keydown', e=>{
-    const cards = Array.from($('#menu').querySelectorAll('.card'));
-    const idx = cards.indexOf(document.activeElement);
-    if(e.key==='ArrowRight'){ const n=Math.min(cards.length-1, idx+1); cards[n].focus(); e.preventDefault(); }
-    if(e.key==='ArrowLeft'){ const n=Math.max(0, idx-1); cards[n].focus(); e.preventDefault(); }
-  });
+  buildVMenu();
 
   // Заголовок
-  $('#openGames').onclick = () => { location.hash = ''; };
   $('#openSettings').onclick = () => { $('#muteToggle').checked = settings.mute; $('#vfxToggle').checked = settings.vfx; $('#themeAltToggle').checked = settings.theme==='alt'; settingsDlg = openDialog('#settingsDialog', $('#openSettings')); };
   $('#openAvatar').onclick = () => { openAvatarPanel($('#openAvatar')); };
 
