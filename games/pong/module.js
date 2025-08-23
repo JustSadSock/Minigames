@@ -206,5 +206,5 @@
   }
   // Регистрируем модуль в глобальном хранилище
   window.__DeepFlyGames = window.__DeepFlyGames || {};
-  window.__DeepFlyGames['pong'] = { manifest, mount };
+  if(!window.__DeepFlyGames['pong']) window.__DeepFlyGames['pong'] = { manifest, mount };
 })();

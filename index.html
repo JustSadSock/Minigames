@@ -448,37 +448,54 @@
   function drawHead(ctx,W,H,S,parts,dx,dy,eyeDx){
     const skin='#f4d7b5', eye='#10131e', mouth='#7a3b2a';
     ctx.clearRect(0,0,W*S,H*S);
-    // шея/тело
     const shirt='#2a2f54';
-    px(ctx,7+dx,12+dy,S,shirt); px(ctx,8+dx,12+dy,S,shirt);
-    px(ctx,7+dx,11+dy,S,shirt); px(ctx,8+dx,11+dy,S,shirt);
-    // голова
-    for(let i=5;i<=10;i++) px(ctx,i+dx,7+dy,S,skin);
-    for(let i=6;i<=9;i++) px(ctx,i+dx,6+dy,S,skin);
-    px(ctx,6+dx,8+dy,S,skin); px(ctx,9+dx,8+dy,S,skin);
+    for(let y=24+dy;y<32+dy;y++){ for(let x=12+dx;x<20+dx;x++) px(ctx,x,y,S,shirt); }
+    for(let y=24+dy;y<27+dy;y++){ for(let x=14+dx;x<18+dx;x++) px(ctx,x,y,S,skin); }
+    for(let y=8+dy;y<24+dy;y++){ for(let x=10+dx;x<22+dx;x++){ px(ctx,x,y,S,skin); } }
     // рот
-    if(parts.mouth===0){ px(ctx,7+dx,9+dy,S,mouth); px(ctx,8+dx,9+dy,S,mouth); }
-    if(parts.mouth===1){ px(ctx,7+dx,9+dy,S,mouth); }
-    if(parts.mouth===2){ px(ctx,7+dx,9+dy,S,mouth); px(ctx,8+dx,9+dy,S,mouth); px(ctx,7+dx,10+dy,S,mouth); px(ctx,8+dx,10+dy,S,mouth); }
-    if(parts.mouth===3){ px(ctx,7+dx,10+dy,S,mouth); px(ctx,8+dx,10+dy,S,mouth); }
+    if(parts.mouth===0){ for(let x=15+dx;x<19+dx;x++) px(ctx,x,21+dy,S,mouth); }
+    if(parts.mouth===1){ for(let x=16+dx;x<18+dx;x++) px(ctx,x,21+dy,S,mouth); }
+    if(parts.mouth===2){ for(let x=15+dx;x<19+dx;x++) for(let y=21+dy;y<23+dy;y++) px(ctx,x,y,S,mouth); }
+    if(parts.mouth===3){ for(let x=15+dx;x<19+dx;x++) px(ctx,x,22+dy,S,mouth); }
     // глаза
-    if(parts.eyes===0){ px(ctx,6+dx+eyeDx,7+dy,S,eye); px(ctx,9+dx+eyeDx,7+dy,S,eye); }
-    if(parts.eyes===1){ px(ctx,6+dx+eyeDx,7+dy,S,eye); }
-    if(parts.eyes===2){ px(ctx,6+dx+eyeDx,7+dy,S,eye); px(ctx,9+dx+eyeDx,7+dy,S,eye); px(ctx,7+dx,7+dy,S,eye); }
-    if(parts.eyes===3){ px(ctx,6+dx+eyeDx,7+dy,S,eye); px(ctx,6+dx+eyeDx,8+dy,S,eye); px(ctx,9+dx+eyeDx,7+dy,S,eye); px(ctx,9+dx+eyeDx,8+dy,S,eye); }
+    if(parts.eyes===0){ for(let y=14+dy;y<16+dy;y++){ px(ctx,13+dx+eyeDx,y,S,eye); px(ctx,20+dx+eyeDx,y,S,eye);} }
+    if(parts.eyes===1){ for(let y=14+dy;y<16+dy;y++) px(ctx,13+dx+eyeDx,y,S,eye); }
+    if(parts.eyes===2){ for(let y=14+dy;y<16+dy;y++){ px(ctx,13+dx+eyeDx,y,S,eye); px(ctx,20+dx+eyeDx,y,S,eye); } px(ctx,16+dx,15+dy,S,eye); }
+    if(parts.eyes===3){ for(let y=14+dy;y<17+dy;y++){ px(ctx,13+dx+eyeDx,y,S,eye); px(ctx,20+dx+eyeDx,y,S,eye); } }
     // волосы
     const hair = hairPalette[parts.hairColor%hairPalette.length];
-    if(parts.hairStyle===0){ for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,5+dx,6+dy,S,hair); px(ctx,10+dx,6+dy,S,hair); }
-    if(parts.hairStyle===1){ for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,5+dx,6+dy,S,hair); px(ctx,6+dx,6+dy,S,hair); }
-    if(parts.hairStyle===2){ for(let i=6;i<=9;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,5+dx,6+dy,S,hair); px(ctx,10+dx,6+dy,S,hair); }
-    if(parts.hairStyle===3){ for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,7+dx,4+dy,S,hair); }
-    if(parts.hairStyle===4){ for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,5+dx,6+dy,S,hair); px(ctx,5+dx,7+dy,S,hair); }
-    if(parts.hairStyle===5){ for(let i=5;i<=10;i++) px(ctx,i+dx,5+dy,S,hair); px(ctx,5+dx,6+dy,S,hair); px(ctx,10+dx,6+dy,S,hair); px(ctx,5+dx,7+dy,S,hair); px(ctx,10+dx,7+dy,S,hair); }
+    if(parts.hairStyle===0){
+      for(let x=10+dx;x<22+dx;x++) px(ctx,x,6+dy,S,hair);
+      for(let x=10+dx;x<22+dx;x++) px(ctx,x,7+dy,S,hair);
+      px(ctx,10+dx,8+dy,S,hair); px(ctx,21+dx,8+dy,S,hair);
+    }
+    if(parts.hairStyle===1){
+      for(let x=10+dx;x<22+dx;x++) px(ctx,x,6+dy,S,hair);
+      for(let x=10+dx;x<22+dx;x++) px(ctx,x,7+dy,S,hair);
+      px(ctx,10+dx,8+dy,S,hair); px(ctx,11+dx,8+dy,S,hair);
+    }
+    if(parts.hairStyle===2){
+      for(let x=12+dx;x<20+dx;x++) px(ctx,x,6+dy,S,hair);
+      px(ctx,10+dx,7+dy,S,hair); px(ctx,21+dx,7+dy,S,hair);
+    }
+    if(parts.hairStyle===3){
+      for(let x=10+dx;x<22+dx;x++) px(ctx,x,6+dy,S,hair);
+      px(ctx,16+dx,5+dy,S,hair);
+    }
+    if(parts.hairStyle===4){
+      for(let x=10+dx;x<22+dx;x++) px(ctx,x,6+dy,S,hair);
+      for(let y=7+dy;y<10+dy;y++) px(ctx,10+dx,y,S,hair);
+    }
+    if(parts.hairStyle===5){
+      for(let x=10+dx;x<22+dx;x++) px(ctx,x,6+dy,S,hair);
+      px(ctx,10+dx,7+dy,S,hair); px(ctx,21+dx,7+dy,S,hair);
+      px(ctx,10+dx,8+dy,S,hair); px(ctx,21+dx,8+dy,S,hair);
+    }
     ctx.globalAlpha=.12; ctx.fillStyle='#000'; ctx.fillRect(0,(dy?S:0),W*S,2*S); ctx.globalAlpha=1;
   }
   function makeAvatar(canvas, parts){
     const ac = canvas.getContext('2d'); ac.imageSmoothingEnabled=false;
-    const W=16,H=16; const S=Math.floor(canvas.width/16);
+    const W=32,H=32; const S=Math.floor(canvas.width/32);
     let tick=0; let cur={...parts};
     function step(){
       tick++;
@@ -628,15 +645,10 @@
   // Роутинг: загрузка игрового модуля по хэшу без dynamic import
   let currentGame = null;
   async function loadGameModule(slug) {
-    // Если модуль уже зарегистрирован, возвращаем его
     if(window.__DeepFlyGames && window.__DeepFlyGames[slug]) {
       return window.__DeepFlyGames[slug];
     }
-    // Иначе создаём тег script и загружаем файл
-    // Если открыто из файловой системы (file://), браузер не позволит
-    // подключать соседние .js файлы как скрипты.  В этом режиме сразу
-    // возвращаем встроенную игру, если она есть.
-    if (location.protocol === 'file:' && games && games[slug]) {
+    if(games && games[slug]) {
       return games[slug];
     }
     return new Promise((resolve, reject) => {
@@ -814,31 +826,33 @@
     const styles=getComputedStyle(document.documentElement);
     const even=styles.getPropertyValue('--grid-even').trim();
     const odd=styles.getPropertyValue('--grid-odd').trim();
-    for(let y=0;y<40;y+=8){
-      for(let x=0;x<40;x+=8){ ctx.fillStyle=((x+y)/8%2===0)?odd:even; ctx.fillRect(x,y,8,8); }
+    for(let y=0;y<48;y+=8){
+      for(let x=0;x<48;x+=8){ ctx.fillStyle=((x+y)/8%2===0)?odd:even; ctx.fillRect(x,y,8,8); }
     }
     if(slug==='pong'){
-      ctx.fillStyle='#ff77bd'; ctx.fillRect(2,8,4,24);
-      ctx.fillStyle='#68c7ff'; ctx.fillRect(34,8,4,24);
-      ctx.fillStyle='#ffd166'; ctx.fillRect(19,18,2,2);
+      ctx.fillStyle='#ff77bd'; ctx.fillRect(4,8,6,32);
+      ctx.fillStyle='#68c7ff'; ctx.fillRect(38,8,6,32);
+      ctx.fillStyle='#ffd166'; ctx.fillRect(22,22,4,4);
     }
     if(slug==='runner'){
-      ctx.fillStyle='#ff77bd'; ctx.fillRect(12,22,8,16);
-      ctx.fillStyle='#ffd166'; ctx.fillRect(12,16,8,6);
-      ctx.fillStyle='#ff6b6b'; ctx.fillRect(28,14,8,20);
+      ctx.fillStyle='#ff77bd'; ctx.fillRect(16,28,12,16);
+      ctx.fillStyle='#ffd166'; ctx.fillRect(16,20,12,8);
+      ctx.fillStyle='#ff6b6b'; ctx.fillRect(36,18,12,28);
     }
   }
-  function drawGameTile(ctx,{slug,title,caption,state}){
-    const w=128,h=48;
+  function drawGameTile(ctx,{slug,title,caption,state,pulse=0}){
+    const w=192,h=64;
     const styles=getComputedStyle(document.documentElement);
     const even=styles.getPropertyValue('--grid-even').trim();
     const odd=styles.getPropertyValue('--grid-odd').trim();
     for(let y=0;y<h;y+=8){ for(let x=0;x<w;x+=8){ ctx.fillStyle=((x+y)/8%2===0)?odd:even; ctx.fillRect(x,y,8,8);} }
-    const border = state===2? '#ffd166' : state===1? styles.getPropertyValue('--highlight'): styles.getPropertyValue('--border');
+    let border = styles.getPropertyValue('--border');
+    if(state===2) border='#ffd166';
+    else if(state===1) border=`rgba(255,209,102,${0.4+0.6*pulse})`;
     ctx.strokeStyle=border; ctx.strokeRect(0.5,0.5,w-1,h-1);
-    ctx.save(); ctx.translate(4,4); drawGameIcon(ctx,slug); ctx.restore();
-    ctx.fillStyle='#e6ebff'; ctx.font='10px ui-monospace'; ctx.textBaseline='top'; ctx.fillText(title,48,8);
-    ctx.fillStyle=styles.getPropertyValue('--muted'); ctx.font='8px ui-monospace'; ctx.fillText(caption,48,24);
+    ctx.save(); ctx.translate(8,8); drawGameIcon(ctx,slug); ctx.restore();
+    ctx.fillStyle='#e6ebff'; ctx.font='14px ui-monospace'; ctx.textBaseline='top'; ctx.fillText(title,64,16);
+    ctx.fillStyle=styles.getPropertyValue('--muted'); ctx.font='10px ui-monospace'; ctx.fillText(caption,64,34);
   }
   function buildVMenu(){
     const menu=$('#vmenu'); menu.innerHTML='';
@@ -846,13 +860,16 @@
     slugs.forEach(slug=>{
       const man=(games[slug]&&games[slug].manifest)||(window.__DeepFlyGames?.[slug]?.manifest)||{slug,name:slug};
       const btn=document.createElement('button'); btn.role='listitem'; btn.className='vcard'; btn.tabIndex=0; btn.dataset.slug=slug;
-      const cv=document.createElement('canvas'); cv.className='pixel'; cv.width=128; cv.height=48; btn.appendChild(cv);
+      const cv=document.createElement('canvas'); cv.className='pixel'; cv.width=192; cv.height=64; btn.appendChild(cv);
       menu.appendChild(btn);
-      let st=0; const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false; drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st});
-      btn.addEventListener('pointerenter',()=>{st=1;drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st});});
-      btn.addEventListener('pointerleave',()=>{st=0;drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st});});
-      btn.addEventListener('pointerdown',e=>{e.preventDefault();st=2;drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st});});
-      btn.addEventListener('pointerup',()=>{st=1;drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st}); location.hash=`game=${slug}`;});
+      let st=0; let pulseT=0; let raf=null; const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false;
+      function redraw(){ drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st,pulse:(Math.sin(pulseT)+1)/2}); }
+      function step(){ if(st===1){ pulseT+=0.1; redraw(); raf=requestAnimationFrame(step);} }
+      redraw();
+      btn.addEventListener('pointerenter',()=>{st=1; pulseT=0; redraw(); step();});
+      btn.addEventListener('pointerleave',()=>{st=0; redraw(); cancelAnimationFrame(raf);});
+      btn.addEventListener('pointerdown',e=>{e.preventDefault();st=2;redraw();});
+      btn.addEventListener('pointerup',()=>{st=1;redraw();location.hash=`game=${slug}`;step();});
       btn.addEventListener('keydown',e=>{
         if(e.key==='Enter'){ e.preventDefault(); location.hash=`game=${slug}`; }
         if(e.key==='ArrowDown'||e.key==='ArrowUp'){

@@ -208,5 +208,5 @@
     };
   }
   window.__DeepFlyGames = window.__DeepFlyGames || {};
-  window.__DeepFlyGames['runner'] = { manifest, mount };
+  if(!window.__DeepFlyGames['runner']) window.__DeepFlyGames['runner'] = { manifest, mount };
 })();
