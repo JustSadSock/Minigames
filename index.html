@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-  <meta name="theme-color" content="#0d0f17" id="themeColor">
+  <meta name="theme-color" content="#1b1e35" id="themeColor">
   <title>DeepFly — мини‑игры</title>
   <!--
     Это стартовая страница игрового хаба.  Она не требует сборки или внешних
@@ -15,18 +15,18 @@
     :root{
       /* Базовая цветовая палитра.  Все переменные легко
          перекрашиваются — достаточно сменить значения здесь. */
-      --bg:#0d0f17;
-      --panel:#111422;
-      --grid-even:#1a1d2c;
-      --grid-odd:#171a29;
-      --border:#1b1e2e;
-      --highlight:#272a3b;
-      --ink:#d7defd;
-      --muted:#8c92b8;
+      --bg:#1b1e35;
+      --panel:#252b50;
+      --grid-even:#2b2f5e;
+      --grid-odd:#22254a;
+      --border:#2f3464;
+      --highlight:#ffe680;
+      --ink:#e8ebff;
+      --muted:#9aa5d9;
       --p1:#ff5ca8;
       --p2:#68c7ff;
-      --radius:12px;
-      --shadow:0 8px 24px rgba(0,0,0,.35);
+      --radius:8px;
+      --shadow:0 6px 16px rgba(0,0,0,.28);
     }
 
     html,body{height:100%;margin:0;color:var(--ink);background:var(--bg);
@@ -35,14 +35,14 @@
     *{box-sizing:border-box;}
     body{display:flex;flex-direction:column;overflow:hidden;touch-action:manipulation;}
     header,footer{
-      padding:8px 16px;
+      padding:6px 12px;
       background:var(--panel);
       border-bottom:1px solid var(--border);
       color:var(--ink);
-      display:flex;align-items:center;gap:16px;
+      display:flex;align-items:center;gap:12px;
     }
     header h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.5px;flex:1;text-align:center;}
-    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
     /* Кнопки с четырьмя состояниями: idle, hover, active, disabled */
     .btn{
       --bg1: #222642;
@@ -59,14 +59,14 @@
       box-shadow: inset 0 -2px 0 0 rgba(0,0,0,.4), 0 6px 0 0 rgba(0,0,0,.2), 0 10px 16px rgba(0,0,0,.3);
       transition: transform .05s ease, filter .15s ease;
       position:relative;
-      min-width:44px;min-height:44px;touch-action:manipulation;
+      min-width:40px;min-height:40px;touch-action:manipulation;
     }
     .btn::after{
       content:""; position:absolute; inset:0;border-radius:10px;
       box-shadow: inset 0 0 0 1px var(--border1), inset 0 0 0 2px var(--border2);
       pointer-events:none;
     }
-    .btn:hover{filter:saturate(1.3);}
+    .btn:hover{filter:brightness(1.2);}
     .btn:active{transform:translateY(2px); box-shadow: inset 0 -1px 0 0 rgba(0,0,0,.45), 0 4px 0 0 rgba(0,0,0,.2), 0 8px 12px rgba(0,0,0,.3);}
     .btn[disabled]{opacity:.5;cursor:not-allowed;filter:grayscale(.6) saturate(.5);}
     .btn:focus{outline:2px solid var(--highlight);outline-offset:2px;}
@@ -74,14 +74,14 @@
     .p2{--bg1:#7ad6ff;--bg2:#2a97d8;--text:#fff;}
     .ghost{--bg1:#1a1d31;--bg2:#0f1223;--text:#aeb6e9;}
 
-    main{flex:1;display:grid;grid-template-columns:1fr minmax(260px,72vh) 1fr;gap:16px;padding:16px;align-items:flex-start;}
-    .side{display:grid;gap:16px;max-width:380px;width:100%;}
-    .center{display:grid;gap:16px;}
+    main{flex:1;display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:12px;padding:12px;align-items:flex-start;}
+    .side{display:grid;gap:12px;max-width:300px;width:100%;}
+    .center{display:grid;gap:12px;}
     .panel{
       background:var(--panel);
       border:1px solid var(--border);
       border-radius:var(--radius);
-      padding:12px;
+      padding:8px;
       box-shadow:var(--shadow);
     }
     .avatar{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;}
@@ -102,18 +102,21 @@
     }
     .scene canvas{border-radius:var(--radius);}
     /* Вертикальное меню игр */
-    .vlist{display:grid;gap:12px;overflow-y:auto;padding:8px;max-height:calc(100vh - 180px);}
-    .vcard{appearance:none;background:none;border:0;padding:0;cursor:pointer;}
+    .vlist{display:grid;gap:8px;overflow-y:auto;padding:4px;max-height:calc(100vh - 160px);}
+    .vcard{appearance:none;background:none;border:0;padding:0;cursor:pointer;transition:filter .2s;}
+    .vcard:hover{filter:brightness(1.2);}
     .vcard:focus{outline:2px solid var(--highlight);outline-offset:2px;}
     .vcard canvas{width:100%;height:auto;image-rendering:pixelated;}
     .hud{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);}
-    .tag{padding:4px 8px;border-radius:999px;background:#14172a;border:1px solid #232742;}
+    .tag{padding:4px 8px;border-radius:999px;background:#2b2f5e;border:1px solid #3a3f75;}
+    #hud{position:fixed;bottom:8px;right:8px;pointer-events:none;}
+    #hud *{pointer-events:auto;}
     @media(max-width:860px){
-      main{grid-template-columns:1fr;grid-template-rows:auto auto auto;max-width:720px;margin:0 auto;}
+      main{grid-template-columns:1fr;grid-template-rows:auto auto;max-width:720px;margin:0 auto;}
       .side{max-width:none;}
       .scene{display:none!important;}
-      .center{gap:12px;}
-      .vlist{max-height:calc(100vh - 140px);}
+      .center{gap:8px;}
+      .vlist{max-height:calc(100vh - 120px);}
     }
 
     .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;}
@@ -129,46 +132,32 @@
   </header>
 
   <main>
-    <!-- Левая колонка: профиль и настройки -->
-    <section class="side">
-      <div class="panel avatar">
-        <canvas id="avatar1" class="pixel" width="96" height="96" style="width:96px;height:96px;"></canvas>
-        <div>
-          <div class="name" id="playerName">Игрок</div>
-          <div class="stats" id="playerStats">готов • ♥ 3 • ★ 0</div>
-          <div class="row" style="margin-top:8px">
-            <canvas id="profileSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-            <canvas id="profileReset" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
+      <!-- Левая колонка: профиль и настройки -->
+      <section class="side">
+        <div class="panel avatar">
+          <canvas id="avatar1" class="pixel" width="16" height="16" style="width:96px;height:96px;"></canvas>
+          <div>
+            <div class="name" id="playerName">Игрок</div>
+            <div class="stats" id="playerStats">готов • ♥ 3 • ★ 0</div>
+            <div class="row" style="margin-top:8px">
+              <canvas id="profileSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
+              <canvas id="profileReset" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
-    <!-- Центральная колонка: сцена и вертикальное меню игр -->
-    <section class="center">
-      <div class="scene panel" id="scenePanel">
-        <canvas id="preview" class="pixel" width="192" height="192"></canvas>
-      </div>
-      <div id="vmenu" class="panel vlist" role="list"></div>
-    </section>
-    <!-- Правая колонка: информация и HUD -->
-    <section class="side">
-      <div class="panel avatar">
-        <canvas id="avatar2" class="pixel" width="96" height="96" style="width:96px;height:96px;"></canvas>
-        <div>
-          <div class="name" id="player2Name">Гость</div>
-          <div class="stats" id="player2Stats">в сети • ♥ 3 • ★ 0</div>
-          <div class="row" style="margin-top:8px">
-            <canvas id="inviteBtn" class="pixel" width="80" height="20" style="width:80px;height:20px;"></canvas>
-            <canvas id="skinBtn" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-          </div>
+      </section>
+      <!-- Центральная колонка: сцена и вертикальное меню игр -->
+      <section class="center">
+        <div class="scene panel" id="scenePanel">
+          <canvas id="preview" class="pixel" width="192" height="192"></canvas>
         </div>
-      </div>
-      <div class="panel hud">
-        <span class="tag">v1.0.0</span>
-        <span class="fps" id="fps">FPS –</span>
-      </div>
-    </section>
-  </main>
+        <div id="vmenu" class="panel vlist" role="list"></div>
+      </section>
+    </main>
+    <div id="hud" class="panel hud">
+      <span class="tag">v1.0.0</span>
+      <span class="fps" id="fps">FPS –</span>
+    </div>
   <footer>
     <small style="color:var(--muted)">Навигация: выбирайте игру в списке или используйте хэш <code>#game=&lt;slug&gt;</code> в адресной строке.</small>
   </footer>
@@ -192,7 +181,7 @@
       <canvas id="avatarClose" class="pixel" width="16" height="16" style="position:absolute;top:8px;right:8px;width:16px;height:16px;"></canvas>
       <h2 id="avatarTitle">Профиль</h2>
       <input id="nickInput" placeholder="Никнейм" style="font-size:16px;padding:4px;width:100%;margin-bottom:8px;" />
-      <canvas id="avatarEdit" class="pixel" width="96" height="96" style="width:96px;height:96px;margin-bottom:8px;"></canvas>
+        <canvas id="avatarEdit" class="pixel" width="16" height="16" style="width:96px;height:96px;margin-bottom:8px;"></canvas>
       <div class="row" id="avatarControls" style="gap:6px;flex-wrap:wrap">
         <div><small>Прическа</small><br>
           <canvas id="hairPrev" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
@@ -264,28 +253,23 @@
   const theme = {
     current: 'dark',
     apply(name){
-      theme.current = name;
+      this.current = name;
+      const set=(k,v)=>document.documentElement.style.setProperty(k,v);
       if(name === 'alt'){
-        document.documentElement.style.setProperty('--bg','#141b2e');
-        document.documentElement.style.setProperty('--panel','#1c233c');
-        document.documentElement.style.setProperty('--grid-even','#202745');
-        document.documentElement.style.setProperty('--grid-odd','#1d2341');
-        document.documentElement.style.setProperty('--border','#252e50');
-        document.documentElement.style.setProperty('--ink','#ccd9ff');
-        document.documentElement.style.setProperty('--muted','#8fa1c7');
+        set('--bg','#21264a'); set('--panel','#2b3270');
+        set('--grid-even','#333a86'); set('--grid-odd','#2a3179');
+        set('--border','#3a4292'); set('--highlight','#ffd5a3');
+        set('--ink','#f0f3ff'); set('--muted','#b4bced');
       } else {
-        document.documentElement.style.setProperty('--bg','#0d0f17');
-        document.documentElement.style.setProperty('--panel','#111422');
-        document.documentElement.style.setProperty('--grid-even','#1a1d2c');
-        document.documentElement.style.setProperty('--grid-odd','#171a29');
-        document.documentElement.style.setProperty('--border','#1b1e2e');
-        document.documentElement.style.setProperty('--ink','#d7defd');
-        document.documentElement.style.setProperty('--muted','#8c92b8');
+        set('--bg','#1b1e35'); set('--panel','#252b50');
+        set('--grid-even','#2b2f5e'); set('--grid-odd','#22254a');
+        set('--border','#2f3464'); set('--highlight','#ffe680');
+        set('--ink','#e8ebff'); set('--muted','#9aa5d9');
       }
-      const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-      document.getElementById('themeColor').setAttribute('content', bg);
+      const meta=document.querySelector('#themeColor');
+      if(meta) meta.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--bg').trim());
     },
-    toggle(){ const next = theme.current==='dark' ? 'alt' : 'dark'; theme.apply(next); return next; }
+    toggle(){ const next=this.current==='dark'?'alt':'dark'; this.apply(next); return next; }
   };
 
   // Примитивный шина событий
@@ -435,6 +419,12 @@
     if(previewState.t % 12 === 0){
       previewState.cursors.forEach(c => spawn(c.x*16+8, c.y*16+8, c.color));
     }
+    if(previewState.t % 150 === 0){
+      const colors=['#ff77bd','#68c7ff','#ffd166','#7aff9e','#c29eff'];
+      const gx=Math.floor(Math.random()*GRID);
+      const gy=Math.floor(Math.random()*GRID);
+      spawn(gx*16+8, gy*16+8, colors[Math.floor(Math.random()*colors.length)]);
+    }
     drawPreviewParticles();
     previewRAF = requestAnimationFrame(previewFrame);
   }
@@ -445,70 +435,92 @@
 
   // Аватары с частями лица
   function px(ctx,x,y,s,color){ ctx.fillStyle=color; ctx.fillRect(x*s,y*s,s,s); }
-  function drawHead(ctx,W,H,S,parts,dx,dy,eyeDx){
-    const skin='#f4d7b5', eye='#10131e', mouth='#7a3b2a';
-    ctx.clearRect(0,0,W*S,H*S);
-    const shirt='#2a2f54';
-    for(let y=24+dy;y<32+dy;y++){ for(let x=12+dx;x<20+dx;x++) px(ctx,x,y,S,shirt); }
-    for(let y=24+dy;y<27+dy;y++){ for(let x=14+dx;x<18+dx;x++) px(ctx,x,y,S,skin); }
-    for(let y=8+dy;y<24+dy;y++){ for(let x=10+dx;x<22+dx;x++){ px(ctx,x,y,S,skin); } }
-    // рот
-    if(parts.mouth===0){ for(let x=15+dx;x<19+dx;x++) px(ctx,x,21+dy,S,mouth); }
-    if(parts.mouth===1){ for(let x=16+dx;x<18+dx;x++) px(ctx,x,21+dy,S,mouth); }
-    if(parts.mouth===2){ for(let x=15+dx;x<19+dx;x++) for(let y=21+dy;y<23+dy;y++) px(ctx,x,y,S,mouth); }
-    if(parts.mouth===3){ for(let x=15+dx;x<19+dx;x++) px(ctx,x,22+dy,S,mouth); }
-    // глаза
-    if(parts.eyes===0){ for(let y=14+dy;y<16+dy;y++){ px(ctx,13+dx+eyeDx,y,S,eye); px(ctx,20+dx+eyeDx,y,S,eye);} }
-    if(parts.eyes===1){ for(let y=14+dy;y<16+dy;y++) px(ctx,13+dx+eyeDx,y,S,eye); }
-    if(parts.eyes===2){ for(let y=14+dy;y<16+dy;y++){ px(ctx,13+dx+eyeDx,y,S,eye); px(ctx,20+dx+eyeDx,y,S,eye); } px(ctx,16+dx,15+dy,S,eye); }
-    if(parts.eyes===3){ for(let y=14+dy;y<17+dy;y++){ px(ctx,13+dx+eyeDx,y,S,eye); px(ctx,20+dx+eyeDx,y,S,eye); } }
-    // волосы
-    const hair = hairPalette[parts.hairColor%hairPalette.length];
-    if(parts.hairStyle===0){
-      for(let x=10+dx;x<22+dx;x++) px(ctx,x,6+dy,S,hair);
-      for(let x=10+dx;x<22+dx;x++) px(ctx,x,7+dy,S,hair);
-      px(ctx,10+dx,8+dy,S,hair); px(ctx,21+dx,8+dy,S,hair);
+  function drawHead(ctx,W,H,S,parts,dy=0){
+      const skin='#f4d7b5', eye='#10131e', mouth='#7a3b2a';
+      ctx.clearRect(0,0,W*S,H*S);
+      for(let x=6;x<10;x++) px(ctx,x,11+dy,S,skin);
+      px(ctx,2,6+dy,S,skin); px(ctx,13,6+dy,S,skin);
+      const rows=[[5,10],[4,11],[3,12],[3,12],[3,12],[3,12],[4,11],[5,10]];
+      for(let i=0;i<rows.length;i++){
+        const y=3+i+dy; const [a,b]=rows[i];
+        for(let x=a;x<b;x++) px(ctx,x,y,S,skin);
+      }
+      switch(parts.mouth){
+        case 0: px(ctx,7,9+dy,S,mouth); break;
+        case 1: px(ctx,7,9+dy,S,mouth); px(ctx,8,9+dy,S,mouth); break;
+        case 2: for(let x=7;x<10;x++) px(ctx,x,9+dy,S,mouth); break;
+        case 3: px(ctx,7,10+dy,S,mouth); px(ctx,8,10+dy,S,mouth); break;
+      }
+      switch(parts.eyes){
+        case 0:
+          px(ctx,5,6+dy,S,eye); px(ctx,6,6+dy,S,eye);
+          px(ctx,9,6+dy,S,eye); px(ctx,10,6+dy,S,eye);
+          break;
+        case 1:
+          px(ctx,5,6+dy,S,eye); px(ctx,10,6+dy,S,eye);
+          break;
+        case 2:
+          for(let y=6;y<8;y++){ px(ctx,5,y+dy,S,eye); px(ctx,10,y+dy,S,eye); }
+          break;
+        case 3:
+          px(ctx,5,6+dy,S,eye); px(ctx,6,6+dy,S,eye);
+          px(ctx,9,6+dy,S,eye); px(ctx,10,6+dy,S,eye);
+          px(ctx,5,7+dy,S,eye); px(ctx,10,7+dy,S,eye);
+          break;
+      }
+      ctx.fillStyle='rgba(255,255,255,0.15)';
+      ctx.fillRect(5*S,(4+dy)*S,S,S);
+      const hair=hairPalette[parts.hairColor%hairPalette.length];
+      switch(parts.hairStyle){
+        case 0:
+          for(let x=3;x<13;x++) px(ctx,x,2+dy,S,hair);
+          for(let x=4;x<12;x++) px(ctx,x,3+dy,S,hair);
+          break;
+        case 1:
+          for(let x=3;x<13;x++) px(ctx,x,2+dy,S,hair);
+          for(let x=4;x<12;x++) px(ctx,x,3+dy,S,hair);
+          px(ctx,4,4+dy,S,hair); px(ctx,11,4+dy,S,hair);
+          break;
+        case 2:
+          for(let x=3;x<13;x++) px(ctx,x,2+dy,S,hair);
+          for(let x=4;x<12;x++) px(ctx,x,3+dy,S,hair);
+          px(ctx,13,4+dy,S,hair); px(ctx,14,5+dy,S,hair);
+          break;
+        case 3:
+          for(let x=3;x<13;x++) px(ctx,x,2+dy,S,hair);
+          for(let x=4;x<12;x++) px(ctx,x,3+dy,S,hair);
+          px(ctx,5,1+dy,S,hair); px(ctx,7,1+dy,S,hair);
+          px(ctx,9,1+dy,S,hair); px(ctx,11,1+dy,S,hair);
+          break;
+        case 4:
+          for(let x=3;x<13;x++) px(ctx,x,2+dy,S,hair);
+          for(let x=4;x<12;x++) px(ctx,x,3+dy,S,hair);
+          for(let y=3;y<6;y++) px(ctx,3,y+dy,S,hair);
+          break;
+        case 5:
+          for(let x=3;x<13;x++) px(ctx,x,2+dy,S,hair);
+          for(let x=4;x<12;x++) px(ctx,x,3+dy,S,hair);
+          px(ctx,3,4+dy,S,hair); px(ctx,12,4+dy,S,hair);
+          px(ctx,3,5+dy,S,hair); px(ctx,12,5+dy,S,hair);
+          break;
+      }
+      ctx.globalAlpha=.15; ctx.fillStyle='#000'; ctx.fillRect(0,0,W*S,1*S); ctx.globalAlpha=1;
     }
-    if(parts.hairStyle===1){
-      for(let x=10+dx;x<22+dx;x++) px(ctx,x,6+dy,S,hair);
-      for(let x=10+dx;x<22+dx;x++) px(ctx,x,7+dy,S,hair);
-      px(ctx,10+dx,8+dy,S,hair); px(ctx,11+dx,8+dy,S,hair);
+    function makeAvatar(canvas, parts){
+      const ac = canvas.getContext('2d'); ac.imageSmoothingEnabled=false;
+      const W=16,H=16; const S=Math.floor(canvas.width/16);
+      let tick=0; let cur={...parts};
+      function step(){
+        tick++;
+        const dy=Math.round(Math.sin(tick/60));
+        drawHead(ac,W,H,S,cur,dy);
+        requestAnimationFrame(step);
+      }
+      step();
+      return { setParts(p){ cur={...cur,...p}; } };
     }
-    if(parts.hairStyle===2){
-      for(let x=12+dx;x<20+dx;x++) px(ctx,x,6+dy,S,hair);
-      px(ctx,10+dx,7+dy,S,hair); px(ctx,21+dx,7+dy,S,hair);
-    }
-    if(parts.hairStyle===3){
-      for(let x=10+dx;x<22+dx;x++) px(ctx,x,6+dy,S,hair);
-      px(ctx,16+dx,5+dy,S,hair);
-    }
-    if(parts.hairStyle===4){
-      for(let x=10+dx;x<22+dx;x++) px(ctx,x,6+dy,S,hair);
-      for(let y=7+dy;y<10+dy;y++) px(ctx,10+dx,y,S,hair);
-    }
-    if(parts.hairStyle===5){
-      for(let x=10+dx;x<22+dx;x++) px(ctx,x,6+dy,S,hair);
-      px(ctx,10+dx,7+dy,S,hair); px(ctx,21+dx,7+dy,S,hair);
-      px(ctx,10+dx,8+dy,S,hair); px(ctx,21+dx,8+dy,S,hair);
-    }
-    ctx.globalAlpha=.12; ctx.fillStyle='#000'; ctx.fillRect(0,(dy?S:0),W*S,2*S); ctx.globalAlpha=1;
-  }
-  function makeAvatar(canvas, parts){
-    const ac = canvas.getContext('2d'); ac.imageSmoothingEnabled=false;
-    const W=32,H=32; const S=Math.floor(canvas.width/32);
-    let tick=0; let cur={...parts};
-    function step(){
-      tick++;
-      const dy=Math.round(Math.sin(tick/60));
-      drawHead(ac,W,H,S,cur,0,dy,0);
-      requestAnimationFrame(step);
-    }
-    step();
-    return { setParts(p){ cur={...cur,...p}; } };
-  }
-  const hairPalette = ['#ff5ca8','#68c7ff','#ffd166','#7aff9e','#c29eff','#ff8c42'];
-  const avatar1 = makeAvatar($('#avatar1'), {hairStyle:0,eyes:0,mouth:0,hairColor:0});
-  const avatar2 = makeAvatar($('#avatar2'), {hairStyle:0,eyes:0,mouth:0,hairColor:1});
+    const hairPalette = ['#ff5ca8','#68c7ff','#ffd166','#7aff9e','#c29eff','#ff8c42'];
+    const avatar1 = makeAvatar($('#avatar1'), {hairStyle:0,eyes:0,mouth:0,hairColor:0});
 
   /*
     Встроенные версии игр.  Чтобы обеспечить работу при открытии файла
@@ -710,7 +722,8 @@
       $('#preview').style.display='none';
       $('#vmenu').style.display='none';
     } catch(err) {
-      flash(`Не удалось загрузить игру «${slug}».`);
+      console.error(err);
+      flash(`Не удалось загрузить игру «${slug}»: ${err && err.message ? err.message : 'см. консоль'}`);
       if(currentGame && currentGame.unmount) currentGame.unmount();
       currentGame = null;
       $('#vmenu').style.display='grid';
@@ -742,61 +755,68 @@
   }
 
   // Профиль
-  let profile = {
-    id: store.get('profile.id', Date.now()),
-    nickname: store.get('profile.nickname','Игрок'),
-    avatar: store.get('profile.avatar',{hairStyle:0,eyes:0,mouth:0,hairColor:0})
-  };
-  store.set('profile.id', profile.id);
-  $('#playerName').textContent = profile.nickname;
-  avatar1.setParts(profile.avatar);
-  avatar2.setParts(profile.avatar);
-  const avatarEdit = makeAvatar($('#avatarEdit'), profile.avatar);
-
-  let avatarDlg=null;
-  function openAvatarPanel(opener){
-    $('#nickInput').value = profile.nickname;
-    avatarEdit.setParts(profile.avatar);
-    avatarDlg = openDialog('#avatarDialog', opener);
-  }
-  const clamp=(v,min,max)=>(v<min?max:(v>max?min:v));
-  const HAIR_STYLES=6, EYE_STYLES=4, MOUTH_STYLES=4;
-  makeCanvasButton($('#hairPrev'),{label:'◀',onClick(){ profile.avatar.hairStyle = clamp(profile.avatar.hairStyle-1,0,HAIR_STYLES-1); avatarEdit.setParts(profile.avatar); }});
-  $('#hairPrev').setAttribute('aria-label','Предыдущая прическа');
-  makeCanvasButton($('#hairNext'),{label:'▶',onClick(){ profile.avatar.hairStyle = clamp(profile.avatar.hairStyle+1,0,HAIR_STYLES-1); avatarEdit.setParts(profile.avatar); }});
-  $('#hairNext').setAttribute('aria-label','Следующая прическа');
-  makeCanvasButton($('#eyesPrev'),{label:'◀',onClick(){ profile.avatar.eyes = clamp(profile.avatar.eyes-1,0,EYE_STYLES-1); avatarEdit.setParts(profile.avatar); }});
-  $('#eyesPrev').setAttribute('aria-label','Предыдущие глаза');
-  makeCanvasButton($('#eyesNext'),{label:'▶',onClick(){ profile.avatar.eyes = clamp(profile.avatar.eyes+1,0,EYE_STYLES-1); avatarEdit.setParts(profile.avatar); }});
-  $('#eyesNext').setAttribute('aria-label','Следующие глаза');
-  makeCanvasButton($('#mouthPrev'),{label:'◀',onClick(){ profile.avatar.mouth = clamp(profile.avatar.mouth-1,0,MOUTH_STYLES-1); avatarEdit.setParts(profile.avatar); }});
-  $('#mouthPrev').setAttribute('aria-label','Предыдущий рот');
-  makeCanvasButton($('#mouthNext'),{label:'▶',onClick(){ profile.avatar.mouth = clamp(profile.avatar.mouth+1,0,MOUTH_STYLES-1); avatarEdit.setParts(profile.avatar); }});
-  $('#mouthNext').setAttribute('aria-label','Следующий рот');
-  makeCanvasButton($('#colorPrev'),{label:'◀',onClick(){ profile.avatar.hairColor = clamp(profile.avatar.hairColor-1,0,hairPalette.length-1); avatarEdit.setParts(profile.avatar); }});
-  $('#colorPrev').setAttribute('aria-label','Предыдущий цвет');
-  makeCanvasButton($('#colorNext'),{label:'▶',onClick(){ profile.avatar.hairColor = clamp(profile.avatar.hairColor+1,0,hairPalette.length-1); avatarEdit.setParts(profile.avatar); }});
-  $('#colorNext').setAttribute('aria-label','Следующий цвет');
-  function saveProfile(){
-    profile.nickname = $('#nickInput').value.trim() || 'Игрок';
-    store.set('profile.nickname', profile.nickname);
-    store.set('profile.avatar', profile.avatar);
+    const wrap=(v,min,max)=>(v<min?max:(v>max?min:v));
+    const clamp=(v,min,max)=>(v<min?min:(v>max?max:v));
+    const HAIR_STYLES=6, EYE_STYLES=4, MOUTH_STYLES=4;
+    function validateAvatar(a){
+      a.hairStyle=clamp(a.hairStyle,0,HAIR_STYLES-1);
+      a.eyes=clamp(a.eyes,0,EYE_STYLES-1);
+      a.mouth=clamp(a.mouth,0,MOUTH_STYLES-1);
+      a.hairColor=clamp(a.hairColor,0,hairPalette.length-1);
+    }
+    let profile = {
+      id: store.get('profile.id', Date.now()),
+      nickname: store.get('profile.nickname','Игрок'),
+      avatar: store.get('profile.avatar',{hairStyle:0,eyes:0,mouth:0,hairColor:0})
+    };
+    validateAvatar(profile.avatar);
+    store.set('profile.id', profile.id);
     $('#playerName').textContent = profile.nickname;
     avatar1.setParts(profile.avatar);
-    avatar2.setParts(profile.avatar);
+    const avatarEdit = makeAvatar($('#avatarEdit'), profile.avatar);
+
+    let avatarDlg=null;
+    function openAvatarPanel(opener){
+      $('#nickInput').value = profile.nickname;
+      validateAvatar(profile.avatar);
+      avatarEdit.setParts(profile.avatar);
+      avatarDlg = openDialog('#avatarDialog', opener);
+    }
+    makeCanvasButton($('#hairPrev'),{label:'◀',onClick(){ profile.avatar.hairStyle = wrap(profile.avatar.hairStyle-1,0,HAIR_STYLES-1); avatarEdit.setParts(profile.avatar); }});
+  $('#hairPrev').setAttribute('aria-label','Предыдущая прическа');
+    makeCanvasButton($('#hairNext'),{label:'▶',onClick(){ profile.avatar.hairStyle = wrap(profile.avatar.hairStyle+1,0,HAIR_STYLES-1); avatarEdit.setParts(profile.avatar); }});
+  $('#hairNext').setAttribute('aria-label','Следующая прическа');
+    makeCanvasButton($('#eyesPrev'),{label:'◀',onClick(){ profile.avatar.eyes = wrap(profile.avatar.eyes-1,0,EYE_STYLES-1); avatarEdit.setParts(profile.avatar); }});
+  $('#eyesPrev').setAttribute('aria-label','Предыдущие глаза');
+    makeCanvasButton($('#eyesNext'),{label:'▶',onClick(){ profile.avatar.eyes = wrap(profile.avatar.eyes+1,0,EYE_STYLES-1); avatarEdit.setParts(profile.avatar); }});
+  $('#eyesNext').setAttribute('aria-label','Следующие глаза');
+    makeCanvasButton($('#mouthPrev'),{label:'◀',onClick(){ profile.avatar.mouth = wrap(profile.avatar.mouth-1,0,MOUTH_STYLES-1); avatarEdit.setParts(profile.avatar); }});
+  $('#mouthPrev').setAttribute('aria-label','Предыдущий рот');
+    makeCanvasButton($('#mouthNext'),{label:'▶',onClick(){ profile.avatar.mouth = wrap(profile.avatar.mouth+1,0,MOUTH_STYLES-1); avatarEdit.setParts(profile.avatar); }});
+  $('#mouthNext').setAttribute('aria-label','Следующий рот');
+    makeCanvasButton($('#colorPrev'),{label:'◀',onClick(){ profile.avatar.hairColor = wrap(profile.avatar.hairColor-1,0,hairPalette.length-1); avatarEdit.setParts(profile.avatar); }});
+  $('#colorPrev').setAttribute('aria-label','Предыдущий цвет');
+    makeCanvasButton($('#colorNext'),{label:'▶',onClick(){ profile.avatar.hairColor = wrap(profile.avatar.hairColor+1,0,hairPalette.length-1); avatarEdit.setParts(profile.avatar); }});
+  $('#colorNext').setAttribute('aria-label','Следующий цвет');
+  function saveProfile(){
+      profile.nickname = $('#nickInput').value.trim() || 'Игрок';
+      validateAvatar(profile.avatar);
+      store.set('profile.nickname', profile.nickname);
+      store.set('profile.avatar', profile.avatar);
+      $('#playerName').textContent = profile.nickname;
+      avatar1.setParts(profile.avatar);
   }
   makeCanvasButton($('#profileSave'),{label:'Профиль',onClick(){ openAvatarPanel($('#profileSave')); }});
   makeCanvasButton($('#avatarSave'),{label:'Сохранить',onClick(){ saveProfile(); avatarDlg && avatarDlg.close(); }});
   makeCanvasButton($('#avatarCancel'),{label:'Отмена',onClick(){ avatarDlg && avatarDlg.close(); }});
   makeCanvasButton($('#avatarClose'),{label:'×',onClick(){ avatarDlg && avatarDlg.close(); }});
   $('#avatarClose').setAttribute('aria-label','Закрыть');
-  makeCanvasButton($('#profileReset'),{label:'Сброс',onClick(){
-    store.del('profile.nickname'); store.del('profile.avatar');
-    profile = { id: profile.id, nickname:'Игрок', avatar:{hairStyle:0,eyes:0,mouth:0,hairColor:0} };
-    $('#playerName').textContent = profile.nickname; avatar1.setParts(profile.avatar); avatar2.setParts(profile.avatar);
-  }});
-  makeCanvasButton($('#inviteBtn'),{label:'Пригласить',onClick(){}});
-  makeCanvasButton($('#skinBtn'),{label:'Скин',onClick(){ openAvatarPanel($('#skinBtn')); }});
+    makeCanvasButton($('#profileReset'),{label:'Сброс',onClick(){
+      store.del('profile.nickname'); store.del('profile.avatar');
+      profile = { id: profile.id, nickname:'Игрок', avatar:{hairStyle:0,eyes:0,mouth:0,hairColor:0} };
+      validateAvatar(profile.avatar);
+      $('#playerName').textContent = profile.nickname; avatar1.setParts(profile.avatar);
+    }});
 
   // Настройки
   settings.mute = store.get('settings.mute', false);
@@ -822,14 +842,14 @@
   $('#settingsClose').setAttribute('aria-label','Закрыть');
 
   // Вертикальное меню игр
-  function drawGameIcon(ctx, slug){
-    const styles=getComputedStyle(document.documentElement);
-    const even=styles.getPropertyValue('--grid-even').trim();
-    const odd=styles.getPropertyValue('--grid-odd').trim();
-    for(let y=0;y<48;y+=8){
-      for(let x=0;x<48;x+=8){ ctx.fillStyle=((x+y)/8%2===0)?odd:even; ctx.fillRect(x,y,8,8); }
-    }
-    if(slug==='pong'){
+    function drawGameIcon(ctx, slug){
+      const styles=getComputedStyle(document.documentElement);
+      const even=styles.getPropertyValue('--grid-even').trim();
+      const odd=styles.getPropertyValue('--grid-odd').trim();
+      for(let y=0;y<48;y+=6){
+        for(let x=0;x<48;x+=6){ ctx.fillStyle=((x+y)/6%2===0)?odd:even; ctx.fillRect(x,y,6,6); }
+      }
+      if(slug==='pong'){
       ctx.fillStyle='#ff77bd'; ctx.fillRect(4,8,6,32);
       ctx.fillStyle='#68c7ff'; ctx.fillRect(38,8,6,32);
       ctx.fillStyle='#ffd166'; ctx.fillRect(22,22,4,4);
@@ -840,7 +860,7 @@
       ctx.fillStyle='#ff6b6b'; ctx.fillRect(36,18,12,28);
     }
   }
-  function drawGameTile(ctx,{slug,title,caption,state,pulse=0}){
+  function drawGameTile(ctx,{slug,title,caption,state,pulse=0,scan=0}){
     const w=192,h=64;
     const styles=getComputedStyle(document.documentElement);
     const even=styles.getPropertyValue('--grid-even').trim();
@@ -850,6 +870,11 @@
     if(state===2) border='#ffd166';
     else if(state===1) border=`rgba(255,209,102,${0.4+0.6*pulse})`;
     ctx.strokeStyle=border; ctx.strokeRect(0.5,0.5,w-1,h-1);
+    ctx.globalAlpha=0.3+0.3*pulse; ctx.strokeStyle=styles.getPropertyValue('--highlight');
+    ctx.strokeRect(2.5,2.5,w-5,h-5); ctx.globalAlpha=1;
+    const sy=Math.floor(scan)%h;
+    ctx.fillStyle='rgba(255,255,255,0.06)';
+    ctx.fillRect(1,sy,w-2,1);
     ctx.save(); ctx.translate(8,8); drawGameIcon(ctx,slug); ctx.restore();
     ctx.fillStyle='#e6ebff'; ctx.font='14px ui-monospace'; ctx.textBaseline='top'; ctx.fillText(title,64,16);
     ctx.fillStyle=styles.getPropertyValue('--muted'); ctx.font='10px ui-monospace'; ctx.fillText(caption,64,34);
@@ -860,10 +885,12 @@
     slugs.forEach(slug=>{
       const man=(games[slug]&&games[slug].manifest)||(window.__DeepFlyGames?.[slug]?.manifest)||{slug,name:slug};
       const btn=document.createElement('button'); btn.role='listitem'; btn.className='vcard'; btn.tabIndex=0; btn.dataset.slug=slug;
-      const cv=document.createElement('canvas'); cv.className='pixel'; cv.width=192; cv.height=64; btn.appendChild(cv);
+      const cv=document.createElement('canvas'); const dpr=Math.max(1,window.devicePixelRatio||1);
+      cv.className='pixel'; cv.width=192*dpr; cv.height=64*dpr; cv.style.width='192px'; cv.style.height='64px';
+      btn.appendChild(cv);
       menu.appendChild(btn);
-      let st=0; let pulseT=0; let raf=null; const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false;
-      function redraw(){ drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st,pulse:(Math.sin(pulseT)+1)/2}); }
+      let st=0; let pulseT=0; let raf=null; const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false; ctx.scale(dpr,dpr);
+      function redraw(){ drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st,pulse:(Math.sin(pulseT)+1)/2,scan:pulseT}); }
       function step(){ if(st===1){ pulseT+=0.1; redraw(); raf=requestAnimationFrame(step);} }
       redraw();
       btn.addEventListener('pointerenter',()=>{st=1; pulseT=0; redraw(); step();});
@@ -887,17 +914,27 @@
   buildVMenu();
 
   // Заголовок
-  function drawGear(ctx){
+  function drawGear(ctx,state=0){
+    ctx.clearRect(0,0,32,32);
     ctx.fillStyle='#e6ebff';
     ctx.fillRect(14,4,4,24);
     ctx.fillRect(4,14,24,4);
+    if(state>0){
+      ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--highlight');
+      ctx.lineWidth=1; ctx.strokeRect(1.5,1.5,ctx.canvas.width-3,ctx.canvas.height-3);
+    }
   }
-  function drawHeadIcon(ctx){
+  function drawHeadIcon(ctx,state=0){
+    ctx.clearRect(0,0,32,32);
     ctx.fillStyle='#ffd166';
     ctx.fillRect(8,8,16,16);
     ctx.fillStyle='#10131e';
     ctx.fillRect(12,12,4,4);
     ctx.fillRect(20,12,4,4);
+    if(state>0){
+      ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--highlight');
+      ctx.lineWidth=1; ctx.strokeRect(1.5,1.5,ctx.canvas.width-3,ctx.canvas.height-3);
+    }
   }
   makeCanvasButton($('#btnSettings'),{drawIcon:drawGear,onClick(){ $('#muteToggle').checked = settings.mute; $('#vfxToggle').checked = settings.vfx; $('#themeAltToggle').checked = settings.theme==='alt'; settingsDlg = openDialog('#settingsDialog', $('#btnSettings')); },width:32,height:32});
   $('#btnSettings').setAttribute('aria-label','Настройки');
