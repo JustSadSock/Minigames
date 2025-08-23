@@ -5,6 +5,8 @@
   const manifest = {
     slug: 'runner',
     name: 'Runner',
+    caption: 'Прыгай и беги',
+    icon: '🏃',
     version: '1.0.0',
     players: 1
   };
@@ -22,11 +24,16 @@
     canvas.width = 160;
     canvas.height = 90;
     canvas.className = 'pixel';
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
     container.appendChild(canvas);
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
+    const ro = new ResizeObserver(()=>{
+      const w = container.clientWidth; const h = container.clientHeight;
+      const scale = Math.max(1, Math.floor(Math.min(w/canvas.width, h/canvas.height)));
+      canvas.style.width = canvas.width*scale+'px';
+      canvas.style.height = canvas.height*scale+'px';
+    });
+    ro.observe(container);
 
     const scoreEl = document.createElement('div');
     scoreEl.style.position = 'absolute';
@@ -78,7 +85,7 @@
 
     function onPointer(e){ e.preventDefault(); jump(); }
     function onKey(e){ if(e.key === ' '){ e.preventDefault(); jump(); } }
-    canvas.addEventListener('pointerdown', onPointer);
+    canvas.addEventListener('pointerdown', onPointer, {passive:false});
     window.addEventListener('keydown', onKey);
 
     function update() {
@@ -86,6 +93,7 @@
       player.vy += gravity;
       player.y += player.vy;
       if(player.y >= groundY - player.h) {
+        if(player.jumping && vfx){ for(let i=0;i<3;i++) particles.push({x:player.x,y:groundY-1,vx:Math.random()*1,vy:-Math.random()*1,life:20}); }
         player.y = groundY - player.h;
         player.vy = 0;
         player.jumping = false;
@@ -102,6 +110,7 @@
         if(!gameOver && o.x < player.x + player.w && o.x + o.w > player.x && o.y < player.y + player.h && o.y + o.h > player.y) {
           gameOver = true;
           running = false;
+          if(score > best){ best = score; context && context.store && context.store.set('games.runner.best', best); }
         }
         if(o.x + o.w < 0){ obstacles.splice(i,1); if(!gameOver) score++; }
       }
@@ -130,23 +139,32 @@
     }
 
     function render(){
-      const odd = getComputedStyle(document.documentElement).getPropertyValue('--grid-odd').trim();
-      const even = getComputedStyle(document.documentElement).getPropertyValue('--grid-even').trim();
+      const styles = getComputedStyle(document.documentElement);
+      const odd = styles.getPropertyValue('--grid-odd').trim();
+      const even = styles.getPropertyValue('--grid-even').trim();
+      const highlight = styles.getPropertyValue('--highlight');
       for(let y=0; y<height; y+=16) {
         for(let x=0; x<width; x+=16) {
           ctx.fillStyle = ((x+y)/16 % 2 === 0) ? odd : even;
           ctx.fillRect(x,y,16,16);
         }
       }
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--highlight');
+      ctx.fillStyle = highlight;
       ctx.fillRect(0, groundY, width, 1);
       drawPlayer();
       ctx.fillStyle = '#ff6b6b';
       obstacles.forEach(o => { ctx.fillRect(o.x, o.y, o.w, o.h); });
-      scoreEl.textContent = gameOver ? `Game Over — счет: ${score}` : `Очки: ${score}`;
+      if(vfx){
+        for(let i=particles.length-1;i>=0;i--){
+          const p=particles[i]; p.life--; p.x+=p.vx; p.y+=p.vy; p.vy+=0.05;
+          ctx.fillStyle='#ccc'; ctx.fillRect(p.x,p.y,1,1);
+          if(p.life<=0) particles.splice(i,1);
+        }
+      }
+      scoreEl.textContent = gameOver ? `Game Over — счет: ${score} (лучший: ${best})` : `Очки: ${score}`;
     }
 
-    let animId;
+    let animId; const particles=[]; const vfx = context && context.store ? context.store.get('settings.vfx', true) : true; let best = context && context.store ? context.store.get('games.runner.best',0) : 0;
     function loop(){
       update();
       render();
@@ -160,6 +178,7 @@
         cancelAnimationFrame(animId);
         canvas.removeEventListener('pointerdown', onPointer);
         window.removeEventListener('keydown', onKey);
+        ro.disconnect();
         if(container.parentNode === root) root.removeChild(container);
       }
     };
