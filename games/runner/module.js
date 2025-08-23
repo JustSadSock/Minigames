@@ -106,8 +106,10 @@
 
     function onPointer(e){ e.preventDefault(); jump(); }
     function onKey(e){ if(e.key === ' '){ e.preventDefault(); jump(); } }
+    function onEsc(e){ if(e.key==='Escape') location.hash=''; }
     canvas.addEventListener('pointerdown', onPointer, {passive:false});
     window.addEventListener('keydown', onKey);
+    window.addEventListener('keydown', onEsc);
 
     function update() {
       if(!running) return;
@@ -199,6 +201,7 @@
         cancelAnimationFrame(animId);
         canvas.removeEventListener('pointerdown', onPointer);
         window.removeEventListener('keydown', onKey);
+        window.removeEventListener('keydown', onEsc);
         ro.disconnect();
         if(container.parentNode === root) root.removeChild(container);
       }

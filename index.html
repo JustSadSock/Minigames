@@ -41,8 +41,7 @@
       color:var(--ink);
       display:flex;align-items:center;gap:16px;
     }
-    header h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.5px;}
-    header .spacer{flex:1;}
+    header h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.5px;flex:1;text-align:center;}
     .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
     /* Кнопки с четырьмя состояниями: idle, hover, active, disabled */
     .btn{
@@ -104,18 +103,17 @@
     .scene canvas{border-radius:var(--radius);}
     /* Вертикальное меню игр */
     .vlist{display:grid;gap:12px;overflow-y:auto;padding:8px;max-height:calc(100vh - 180px);}
-    .vcard{appearance:none;border:1px solid var(--border);border-radius:var(--radius);background:var(--panel);color:var(--ink);cursor:pointer;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:12px;padding:10px;min-height:64px;text-align:left;touch-action:manipulation;}
-    .vcard:hover{filter:saturate(1.1);}
-    .vcard:active{transform:translateY(2px);}
+    .vcard{appearance:none;background:none;border:0;padding:0;cursor:pointer;}
     .vcard:focus{outline:2px solid var(--highlight);outline-offset:2px;}
-    .icon64{width:64px;height:64px;image-rendering:pixelated;}
-    .meta .title{font-weight:700;}
-    .meta .caption{font-size:12px;color:var(--muted);}
+    .vcard canvas{width:100%;height:auto;image-rendering:pixelated;}
     .hud{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);}
     .tag{padding:4px 8px;border-radius:999px;background:#14172a;border:1px solid #232742;}
     @media(max-width:860px){
       main{grid-template-columns:1fr;grid-template-rows:auto auto auto;max-width:720px;margin:0 auto;}
       .side{max-width:none;}
+      .scene{display:none!important;}
+      .center{gap:12px;}
+      .vlist{max-height:calc(100vh - 140px);}
     }
 
     .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;}
@@ -125,20 +123,16 @@
 </head>
 <body>
   <header>
+    <canvas id="btnAvatar" class="pixel" width="32" height="32" style="width:32px;height:32px;border-radius:16px;"></canvas>
     <h1>DeepFly — мини‑игры</h1>
-    <div class="spacer"></div>
-    <div class="row">
-      <canvas id="btnGames" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-      <canvas id="btnSettings" class="pixel" width="80" height="20" style="width:80px;height:20px;"></canvas>
-      <canvas id="btnAvatar" class="pixel" width="80" height="20" style="width:80px;height:20px;"></canvas>
-    </div>
+    <canvas id="btnSettings" class="pixel" width="32" height="32" style="width:32px;height:32px;border-radius:16px;"></canvas>
   </header>
 
   <main>
     <!-- Левая колонка: профиль и настройки -->
     <section class="side">
       <div class="panel avatar">
-        <canvas id="avatar1" class="pixel" width="64" height="64" style="width:64px;height:64px;"></canvas>
+        <canvas id="avatar1" class="pixel" width="96" height="96" style="width:96px;height:96px;"></canvas>
         <div>
           <div class="name" id="playerName">Игрок</div>
           <div class="stats" id="playerStats">готов • ♥ 3 • ★ 0</div>
@@ -159,7 +153,7 @@
     <!-- Правая колонка: информация и HUD -->
     <section class="side">
       <div class="panel avatar">
-        <canvas id="avatar2" class="pixel" width="64" height="64" style="width:64px;height:64px;"></canvas>
+        <canvas id="avatar2" class="pixel" width="96" height="96" style="width:96px;height:96px;"></canvas>
         <div>
           <div class="name" id="player2Name">Гость</div>
           <div class="stats" id="player2Stats">в сети • ♥ 3 • ★ 0</div>
@@ -198,7 +192,7 @@
       <canvas id="avatarClose" class="pixel" width="16" height="16" style="position:absolute;top:8px;right:8px;width:16px;height:16px;"></canvas>
       <h2 id="avatarTitle">Профиль</h2>
       <input id="nickInput" placeholder="Никнейм" style="font-size:16px;padding:4px;width:100%;margin-bottom:8px;" />
-      <canvas id="avatarEdit" class="pixel" width="64" height="64" style="width:64px;height:64px;margin-bottom:8px;"></canvas>
+      <canvas id="avatarEdit" class="pixel" width="96" height="96" style="width:96px;height:96px;margin-bottom:8px;"></canvas>
       <div class="row" id="avatarControls" style="gap:6px;flex-wrap:wrap">
         <div><small>Прическа</small><br>
           <canvas id="hairPrev" class="pixel" width="32" height="16" style="width:32px;height:16px;"></canvas>
@@ -235,7 +229,7 @@
   const $ = (sel) => document.querySelector(sel);
 
   // Универсальная канвас-кнопка
-  function makeCanvasButton(canvas, { label, onClick, fontPx=10, width=canvas.width, height=canvas.height }){
+  function makeCanvasButton(canvas, { label, drawIcon, onClick, fontPx=10, width=canvas.width, height=canvas.height }){
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
     canvas.width = width; canvas.height = height;
@@ -245,14 +239,18 @@
       ctx.clearRect(0,0,width,height);
       ctx.fillStyle = bg; ctx.fillRect(0,0,width,height);
       ctx.strokeStyle = '#000'; ctx.strokeRect(0.5,0.5,width-1,height-1);
-      ctx.fillStyle = enabled ? '#e6ebff' : '#8c92b8';
-      ctx.font = `${fontPx}px ui-monospace`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(label, width/2, height/2+1);
+      if(drawIcon){
+        drawIcon(ctx, st);
+      } else {
+        ctx.fillStyle = enabled ? '#e6ebff' : '#8c92b8';
+        ctx.font = `${fontPx}px ui-monospace`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(label, width/2, height/2+1);
+      }
     }
     function setEnabled(v){ enabled = !!v; draw(); }
     function setLabel(v){ label = v; canvas.setAttribute('aria-label', v); draw(); }
-    canvas.tabIndex = 0; canvas.setAttribute('role','button'); canvas.setAttribute('aria-label', label);
+    canvas.tabIndex = 0; canvas.setAttribute('role','button'); if(label) canvas.setAttribute('aria-label', label);
     canvas.addEventListener('pointerenter',()=>{ if(enabled){ st=1; draw(); } });
     canvas.addEventListener('pointerleave',()=>{ if(enabled){ st=0; draw(); } });
     canvas.addEventListener('pointerdown',e=>{ if(enabled){ e.preventDefault(); st=2; draw(); } });
@@ -442,7 +440,8 @@
   }
   function startPreview(){ if(previewRunning) return; previewRunning=true; previewFrame(); }
   function stopPreview(){ if(!previewRunning) return; previewRunning=false; if(previewRAF!==null){ cancelAnimationFrame(previewRAF); previewRAF=null; } }
-  drawPreviewGrid(); startPreview();
+  drawPreviewGrid();
+  if(!window.matchMedia('(max-width: 860px)').matches) startPreview();
 
   // Аватары с частями лица
   function px(ctx,x,y,s,color){ ctx.fillStyle=color; ctx.fillRect(x*s,y*s,s,s); }
@@ -479,12 +478,16 @@
   }
   function makeAvatar(canvas, parts){
     const ac = canvas.getContext('2d'); ac.imageSmoothingEnabled=false;
-    const W=16,H=16,S=4; let pointer=0; let tick=0; let cur={...parts};
-    function onMove(e){ if(!settings.vfx){ pointer=0; return; } const r=canvas.getBoundingClientRect(); const sx=(e.clientX-r.left)/r.width-0.5; pointer=Math.max(-1,Math.min(1,Math.round(sx*2))); }
-    canvas.addEventListener('pointermove', onMove);
-    function step(){ tick++; const eyeDx=settings.vfx?Math.max(-1,Math.min(1,Math.round(Math.sin(tick/40))+pointer)):0; drawHead(ac,W,H,S,cur,0,0,eyeDx); requestAnimationFrame(step); }
+    const W=16,H=16; const S=Math.floor(canvas.width/16);
+    let tick=0; let cur={...parts};
+    function step(){
+      tick++;
+      const dy=Math.round(Math.sin(tick/60));
+      drawHead(ac,W,H,S,cur,0,dy,0);
+      requestAnimationFrame(step);
+    }
     step();
-    return { setParts(p){ cur={...cur,...p}; }, destroy(){ canvas.removeEventListener('pointermove', onMove); } };
+    return { setParts(p){ cur={...cur,...p}; } };
   }
   const hairPalette = ['#ff5ca8','#68c7ff','#ffd166','#7aff9e','#c29eff','#ff8c42'];
   const avatar1 = makeAvatar($('#avatar1'), {hairStyle:0,eyes:0,mouth:0,hairColor:0});
@@ -666,43 +669,46 @@
   }
   async function loadFromHash(){
     const m = location.hash.match(/game=([\w-]+)/);
+    const isMobile = window.matchMedia('(max-width: 860px)').matches;
     if(!m){
       if(currentGame && currentGame.unmount) currentGame.unmount();
       currentGame = null;
-      $('#preview').style.display='block';
+      document.querySelectorAll('.side').forEach(el=>el.style.display='');
       $('#vmenu').style.display='grid';
-      startPreview();
+      $('#scenePanel').classList.add('scene');
+      if(isMobile){
+        $('#scenePanel').style.display='none';
+      } else {
+        $('#scenePanel').style.display='flex';
+        $('#preview').style.display='block';
+        startPreview();
+      }
       const firstCard = $('#vmenu .vcard'); if(firstCard) firstCard.focus();
       return;
     }
     const slug = m[1];
     try {
-      let mod;
-      // Всегда сначала пробуем встроенную игру.  Это гарантирует
-      // работу из локальной файловой системы, где загрузка внешних
-      // модулей запрещена.  Если встроенного варианта нет, пытаемся
-      // загрузить модуль из каталога games/<slug>/.
-      if (games && games[slug]) {
-        mod = games[slug];
-      } else {
-        mod = await loadGameModule(slug);
-      }
+      const mod = await loadGameModule(slug);
       if(currentGame && currentGame.unmount) currentGame.unmount();
       currentGame = await mod.mount($('#scenePanel'), getContext());
       stopPreview();
+      document.querySelectorAll('.side').forEach(el=>el.style.display='none');
+      $('#scenePanel').classList.remove('scene');
+      $('#scenePanel').style.display='flex';
       $('#preview').style.display='none';
       $('#vmenu').style.display='none';
     } catch(err) {
-      flash(`Не удалось загрузить игру «${slug}». Убедитесь, что папка games/${slug}/module.js существует.`);
+      flash(`Не удалось загрузить игру «${slug}».`);
       if(currentGame && currentGame.unmount) currentGame.unmount();
       currentGame = null;
-      $('#preview').style.display='block';
       $('#vmenu').style.display='grid';
-      startPreview();
+      $('#scenePanel').classList.add('scene');
+      if(!isMobile){ $('#scenePanel').style.display='flex'; $('#preview').style.display='block'; startPreview(); } else { $('#scenePanel').style.display='none'; }
       const firstCard = $('#vmenu .vcard'); if(firstCard) firstCard.focus();
     }
   }
   window.addEventListener('hashchange', loadFromHash);
+  window.addEventListener('keydown',e=>{ if(e.key==='Escape' && location.hash.includes('game=')) location.hash=''; });
   loadFromHash();
   
   // Контекст, передаваемый в игры
@@ -804,25 +810,49 @@
   $('#settingsClose').setAttribute('aria-label','Закрыть');
 
   // Вертикальное меню игр
-  function drawIcon(canvas, slug){
-    const ctx=canvas.getContext('2d'); ctx.imageSmoothingEnabled=false;
-    const W=32,H=32; const styles=getComputedStyle(document.documentElement);
-    const even=styles.getPropertyValue('--grid-even').trim(); const odd=styles.getPropertyValue('--grid-odd').trim();
-    for(let y=0;y<H;y+=8){ for(let x=0;x<W;x+=8){ ctx.fillStyle=((x+y)/8%2===0)?odd:even; ctx.fillRect(x,y,8,8);} }
-    if(slug==='pong'){ ctx.fillStyle='#ff77bd'; ctx.fillRect(2,6,3,20); ctx.fillStyle='#68c7ff'; ctx.fillRect(27,6,3,20); ctx.fillStyle='#ffd166'; ctx.fillRect(15,15,2,2); }
-    if(slug==='runner'){ ctx.fillStyle='#ff77bd'; ctx.fillRect(10,18,4,8); ctx.fillStyle='#ffd166'; ctx.fillRect(10,14,4,4); ctx.fillStyle='#ff6b6b'; ctx.fillRect(22,12,4,12); }
+  function drawGameIcon(ctx, slug){
+    const styles=getComputedStyle(document.documentElement);
+    const even=styles.getPropertyValue('--grid-even').trim();
+    const odd=styles.getPropertyValue('--grid-odd').trim();
+    for(let y=0;y<40;y+=8){
+      for(let x=0;x<40;x+=8){ ctx.fillStyle=((x+y)/8%2===0)?odd:even; ctx.fillRect(x,y,8,8); }
+    }
+    if(slug==='pong'){
+      ctx.fillStyle='#ff77bd'; ctx.fillRect(2,8,4,24);
+      ctx.fillStyle='#68c7ff'; ctx.fillRect(34,8,4,24);
+      ctx.fillStyle='#ffd166'; ctx.fillRect(19,18,2,2);
+    }
+    if(slug==='runner'){
+      ctx.fillStyle='#ff77bd'; ctx.fillRect(12,22,8,16);
+      ctx.fillStyle='#ffd166'; ctx.fillRect(12,16,8,6);
+      ctx.fillStyle='#ff6b6b'; ctx.fillRect(28,14,8,20);
+    }
+  }
+  function drawGameTile(ctx,{slug,title,caption,state}){
+    const w=128,h=48;
+    const styles=getComputedStyle(document.documentElement);
+    const even=styles.getPropertyValue('--grid-even').trim();
+    const odd=styles.getPropertyValue('--grid-odd').trim();
+    for(let y=0;y<h;y+=8){ for(let x=0;x<w;x+=8){ ctx.fillStyle=((x+y)/8%2===0)?odd:even; ctx.fillRect(x,y,8,8);} }
+    const border = state===2? '#ffd166' : state===1? styles.getPropertyValue('--highlight'): styles.getPropertyValue('--border');
+    ctx.strokeStyle=border; ctx.strokeRect(0.5,0.5,w-1,h-1);
+    ctx.save(); ctx.translate(4,4); drawGameIcon(ctx,slug); ctx.restore();
+    ctx.fillStyle='#e6ebff'; ctx.font='10px ui-monospace'; ctx.textBaseline='top'; ctx.fillText(title,48,8);
+    ctx.fillStyle=styles.getPropertyValue('--muted'); ctx.font='8px ui-monospace'; ctx.fillText(caption,48,24);
   }
   function buildVMenu(){
-    const menu = $('#vmenu'); menu.innerHTML='';
-    const slugs=['pong','runner'];
+    const menu=$('#vmenu'); menu.innerHTML='';
+    const slugs=Array.from(new Set([...(games?Object.keys(games):[]), ...(window.__DeepFlyGames?Object.keys(window.__DeepFlyGames):[])]));
     slugs.forEach(slug=>{
-      const man=(games[slug]&&games[slug].manifest)||{slug};
-      const btn=document.createElement('button'); btn.role='listitem';
-      btn.className='vcard'; btn.tabIndex=0; btn.dataset.slug=slug;
-      const icon=document.createElement('canvas'); icon.className='pixel icon64'; icon.width=32; icon.height=32; drawIcon(icon,slug);
-      const meta=document.createElement('div'); meta.className='meta'; meta.innerHTML=`<div class="title">${man.name||slug}</div><div class="caption">${man.caption||''}</div>`;
-      btn.appendChild(icon); btn.appendChild(meta);
-      btn.addEventListener('click',()=>{ location.hash=`game=${slug}`; });
+      const man=(games[slug]&&games[slug].manifest)||(window.__DeepFlyGames?.[slug]?.manifest)||{slug,name:slug};
+      const btn=document.createElement('button'); btn.role='listitem'; btn.className='vcard'; btn.tabIndex=0; btn.dataset.slug=slug;
+      const cv=document.createElement('canvas'); cv.className='pixel'; cv.width=128; cv.height=48; btn.appendChild(cv);
+      menu.appendChild(btn);
+      let st=0; const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false; drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st});
+      btn.addEventListener('pointerenter',()=>{st=1;drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st});});
+      btn.addEventListener('pointerleave',()=>{st=0;drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st});});
+      btn.addEventListener('pointerdown',e=>{e.preventDefault();st=2;drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st});});
+      btn.addEventListener('pointerup',()=>{st=1;drawGameTile(ctx,{slug,title:man.name,caption:man.caption||'',state:st}); location.hash=`game=${slug}`;});
       btn.addEventListener('keydown',e=>{
         if(e.key==='Enter'){ e.preventDefault(); location.hash=`game=${slug}`; }
         if(e.key==='ArrowDown'||e.key==='ArrowUp'){
@@ -835,15 +865,27 @@
       });
       btn.addEventListener('focus',()=>{ btn.scrollIntoView({block:'nearest',inline:'nearest'}); });
       btn.setAttribute('aria-label', man.name||slug);
-      menu.appendChild(btn);
     });
   }
   buildVMenu();
 
   // Заголовок
-  makeCanvasButton($('#btnGames'),{label:'Игры',onClick(){ location.hash=''; }});
-  makeCanvasButton($('#btnSettings'),{label:'Настройки',onClick(){ $('#muteToggle').checked = settings.mute; $('#vfxToggle').checked = settings.vfx; $('#themeAltToggle').checked = settings.theme==='alt'; settingsDlg = openDialog('#settingsDialog', $('#btnSettings')); }});
-  makeCanvasButton($('#btnAvatar'),{label:'Аватар',onClick(){ openAvatarPanel($('#btnAvatar')); }});
+  function drawGear(ctx){
+    ctx.fillStyle='#e6ebff';
+    ctx.fillRect(14,4,4,24);
+    ctx.fillRect(4,14,24,4);
+  }
+  function drawHeadIcon(ctx){
+    ctx.fillStyle='#ffd166';
+    ctx.fillRect(8,8,16,16);
+    ctx.fillStyle='#10131e';
+    ctx.fillRect(12,12,4,4);
+    ctx.fillRect(20,12,4,4);
+  }
+  makeCanvasButton($('#btnSettings'),{drawIcon:drawGear,onClick(){ $('#muteToggle').checked = settings.mute; $('#vfxToggle').checked = settings.vfx; $('#themeAltToggle').checked = settings.theme==='alt'; settingsDlg = openDialog('#settingsDialog', $('#btnSettings')); },width:32,height:32});
+  $('#btnSettings').setAttribute('aria-label','Настройки');
+  makeCanvasButton($('#btnAvatar'),{drawIcon:drawHeadIcon,onClick(){ openAvatarPanel($('#btnAvatar')); },width:32,height:32});
+  $('#btnAvatar').setAttribute('aria-label','Профиль');
 
   </script>
 </body>
