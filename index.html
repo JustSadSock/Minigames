@@ -8,12 +8,14 @@
     />
     <title>Minigames — Arcade</title>
     <meta name="theme-color" content="#0b0b0f" />
+    <!-- лёгкий пиксельный favicon, чтобы не было 404 -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect width='16' height='16' fill='%230b0b0f'/%3E%3Crect x='3' y='3' width='10' height='10' fill='%23c7d6ff'/%3E%3Crect x='5' y='5' width='6' height='6' fill='%234b5a8c'/%3E%3C/svg%3E">
     <!-- Все эффекты — чистый код. Ни картинок, ни библиотек. -->
     <link rel="preload" href="./styles.css" as="style" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <!-- CRT шейдеры и шум -->
+    <!-- CRT слои (очень мягкие, без «кислоты») -->
     <canvas id="crt-canvas" aria-hidden="true"></canvas>
     <div id="scanlines" aria-hidden="true"></div>
     <div id="vignette" aria-hidden="true"></div>
@@ -21,7 +23,7 @@
 
     <!-- Вся UI-рамка автомата -->
     <div class="cabinet">
-      <!-- Маркиза с неоном -->
+      <!-- Маркиза (умеренная, ретро-кабинет, без неона) -->
       <header class="marquee">
         <div class="marquee-inner">
           <div class="logo">
@@ -29,7 +31,7 @@
             <span class="logo-front">MINIGAMES</span>
           </div>
           <div class="header-right">
-            <button class="coin-btn" id="insertCoinBtn" title="Вставить монету (C)">
+            <button class="coin-btn" id="insertCoinBtn" title="Вставить монету (C)" aria-label="Insert coin">
               <span class="coin-led" id="coinLed"></span>
               INSERT COIN
             </button>
@@ -40,7 +42,7 @@
                 <button class="nick-edit" id="changeNickBtn" title="Изменить ник">EDIT</button>
               </div>
             </div>
-            <button id="settingsBtn" class="settings-btn" title="Настройки">
+            <button id="settingsBtn" class="settings-btn" title="Настройки" aria-label="Открыть настройки">
               <span class="gear"></span>
             </button>
           </div>
@@ -48,7 +50,7 @@
       </header>
 
       <!-- Панель статуса -->
-      <div class="statusbar">
+      <div class="statusbar" role="status" aria-live="polite">
         <div class="status-left">
           <span class="led led-green" id="ledReady"></span> READY
         </div>
@@ -61,7 +63,7 @@
       </div>
 
       <!-- Меню игр: строго по два в ряд, вертикальная прокрутка -->
-      <main class="menu">
+      <main class="menu" role="main">
         <div id="gamesGrid" class="games-grid" role="list" aria-label="Список игр">
           <!-- Карточки генерируются скриптом -->
         </div>

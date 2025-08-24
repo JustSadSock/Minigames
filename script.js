@@ -106,6 +106,24 @@
     return () => (x = (x * 1664525 + 1013904223) >>> 0) / 2**32;
   };
 
+  /* -------------------- Color helpers -------------------- */
+  function hexToRgb(hex) {
+    if (!hex) return { r: 0, g: 0, b: 0 };
+    const m = hex.replace('#', '').trim();
+    const n = m.length === 3
+      ? m.split('').map(c => c + c).join('')
+      : m.padEnd(6, '0').slice(0, 6);
+    const r = parseInt(n.slice(0, 2), 16);
+    const g = parseInt(n.slice(2, 4), 16);
+    const b = parseInt(n.slice(4, 6), 16);
+    return { r, g, b };
+  }
+  function withAlpha(hex, a = 1) {
+    const { r, g, b } = hexToRgb(hex);
+    const alpha = Math.max(0, Math.min(1, a));
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
   /* -------------------- Avatar Identicon -------------------- */
   function drawAvatar(canvas, nick) {
     const ctx = canvas.getContext('2d', { alpha: false });
@@ -155,7 +173,7 @@
       const img = ctx.createImageData(128, 72);
       for (let i=0; i<img.data.length; i+=4) {
         const n = (Math.random()*255)|0;
-        img.data[i] = n; img.data[i+1] = n; img.data[i+2] = n; img.data[i+3] = (state.bloom?20:10);
+        img.data[i] = n; img.data[i+1] = n; img.data[i+2] = n; img.data[i+3] = (state.bloom ? 14 : 8); // чуть тише
       }
       ctx.globalCompositeOperation = 'screen';
       ctx.putImageData(img, (w-128)/2 + Math.sin(t*0.02)*6, (h-72)/2 + Math.cos(t*0.018)*6);
@@ -166,17 +184,18 @@
 
   /* -------------------- Palettes -------------------- */
   const palettes = {
-    pico8: ['#1d2b53', '#7e2553', '#008751', '#ab5236', '#5f574f', '#c2c3c7', '#fff1e8', '#ff004d', '#ffa300', '#ffec27', '#00e756', '#29adff', '#83769c', '#ff77a8', '#ffccaa', '#00b543'],
+    // Мягкие ретро-палитры без кислотности
+    pico8: ['#1d2b53', '#7e2553', '#008751', '#5f574f', '#c2c3c7', '#fff1e8', '#ff004d', '#ffa300', '#ffec27', '#00e756', '#29adff', '#83769c', '#ff77a8', '#ffccaa', '#2e4057', '#223e36'],
     c64:   ['#000000','#352879','#218d3b','#55a049','#8e2f4f','#5e5c9d','#83769c','#ffffff','#68372b','#70a4b2','#6f3d86','#588d43','#352879','#b8c76f','#6f4f25','#433900'],
     gb:    ['#0f380f','#306230','#8bac0f','#9bbc0f','#0f380f','#306230','#8bac0f','#9bbc0f'],
-    nes:   ['#7C7C7C','#0000FC','#0000BC','#4428BC','#940084','#A80020','#A81000','#881400','#503000','#007800','#006800','#005800','#004058','#000000','#BCBCBC','#0078F8']
+    nes:   ['#7C7C7C','#5454b8','#34349c','#4428BC','#8c3a7a','#a83434','#a86a34','#784020','#503000','#2a7c4a','#2a6848','#285848','#244058','#000000','#BCBCBC','#7aa8f8']
   };
 
   function applyPalette(name) {
     state.palette = name;
     document.documentElement.classList.remove('palette-pico8','palette-c64','palette-gb','palette-nes');
     document.documentElement.classList.add(`palette-${name}`);
-    $('#paletteName').textContent = name.toUpperCase().replace('PICO8','PICO-8');
+    $('#paletteName').textContent = (name === 'pico8' ? 'PICO-8' : name.toUpperCase());
     // Перерисовать превью игр под палитру
     state.games.forEach(g => drawGamePreview(g.canvas, g.previewSeed, name));
     saveState();
@@ -222,14 +241,16 @@
     const W = canvas.width, H = canvas.height;
     const rnd = seededRng(seed);
     ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
-    // Фон — звёзды/шахматка/грид в зависимости от игры (по seed)
-    const pal = palettes[paletteName] || palettes.pico8;
-    const bg = pal[(seed>>3) % pal.length];
-    const fg = pal[(seed>>7) % pal.length];
-    const ex = pal[(seed>>11) % pal.length];
-    // Градиентный космос
+    // Безопасная палитра (fallback, чтобы не было undefined)
+    const pal = (palettes && palettes[paletteName] && palettes[paletteName].length)
+      ? palettes[paletteName] : palettes.pico8;
+    const bg = pal[(Math.abs(seed>>3)) % pal.length] || '#1d2b53';
+    const fg = pal[(Math.abs(seed>>7)) % pal.length] || '#c2c3c7';
+    const ex = pal[(Math.abs(seed>>11)) % pal.length] || '#ffec27';
+    // Градиент (rgba вместо хакового '#xxxxxxee')
     const g = ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0, bg+'ee'); g.addColorStop(1, '#000000ff');
+    g.addColorStop(0, withAlpha(bg, 0.9));
+    g.addColorStop(1, 'rgba(0,0,0,1)');
     ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
     // Звёзды
     for (let i=0;i<160;i++){
@@ -243,7 +264,7 @@
     ctx.fillStyle = fg;
     const cx = (W/2)|0, cy=(H/2)|0;
     for (let r=24; r>3; r-=3) {
-      ctx.globalAlpha = 0.12 + (r%6===0?0.08:0);
+      ctx.globalAlpha = 0.08 + (r%6===0?0.06:0);
       ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
     }
     ctx.globalAlpha = 1;
@@ -267,10 +288,10 @@
       }
     }
     // Нижняя «земля/панель»
-    ctx.fillStyle = '#00000088';
+    ctx.fillStyle = 'rgba(0,0,0,.35)';
     ctx.fillRect(0,H-20,W,20);
     for(let x=0;x<W;x+=8){
-      ctx.fillStyle = pal[(x>>3)%pal.length]+'88';
+      ctx.fillStyle = withAlpha(pal[(x>>3)%pal.length] || '#5f574f', .55);
       ctx.fillRect(x,H-2,4,2);
     }
   }
@@ -285,7 +306,7 @@
     state.ui.gamesGrid = $('#gamesGrid');
     state.ui.hud = $('#hud');
 
-    if (state.ui.nick) state.ui.nick.textContent = state.ui.nick.textContent || '@player';
+    // ник
     $('#nickDisplay').textContent = state.ui.nickDisplay?.textContent || (JSON.parse(localStorage.getItem(storageKey)||'{}').nick || '@player');
     drawAvatar(state.ui.avatar, $('#nickDisplay').textContent);
     state.ui.credits.textContent = pad2(state.credits);
@@ -309,7 +330,7 @@
     $('#volumeRange').value = String(state.volume);
 
     // Effects
-    document.querySelector(':root').style.setProperty('--scan-alpha', state.scan ? '0.12' : '0.0');
+    document.querySelector(':root').style.setProperty('--scan-alpha', state.scan ? '0.06' : '0.0'); // деликатнее
     setupCrtCanvas();
     if (!state.bloom) document.body.classList.add('no-bloom');
   }
@@ -385,7 +406,7 @@
     state.noise = nse;
     state.volume = vol;
     sfxGain && (sfxGain.gain.value = snd ? vol : 0);
-    document.querySelector(':root').style.setProperty('--scan-alpha', scn ? '0.12' : '0.0');
+    document.querySelector(':root').style.setProperty('--scan-alpha', scn ? '0.06' : '0.0');
     document.body.classList.toggle('no-bloom', !blm);
     applyPalette(pal);
     saveState();
@@ -429,7 +450,7 @@
     });
     $('#scanBtn').addEventListener('click', ()=>{
       state.scan = !state.scan;
-      document.querySelector(':root').style.setProperty('--scan-alpha', state.scan ? '0.12' : '0.0');
+      document.querySelector(':root').style.setProperty('--scan-alpha', state.scan ? '0.06' : '0.0');
       hud(state.scan?'SCANLINES ON':'SCANLINES OFF', 700);
       saveState();
     });
@@ -459,12 +480,11 @@
     });
 
     // Settings modal submission
-    $('#settingsModal').addEventListener('close', (e)=>{
-      // ничего: обработку делаем по кнопкам ниже
-    });
+    // чтобы «Enter» в форме не закрывал модалку как cancel
+    $('#settingsModal').addEventListener('cancel', (e)=>{ e.preventDefault(); });
     // Интерцепт кликов по OK/Cancel
     $('.px-modal-inner').addEventListener('click', (e)=>{
-      if (e.target instanceof HTMLButtonElement) {
+      if (e.target && e.target.tagName === 'BUTTON') {
         const v = e.target.value;
         if (v === 'ok') applySettingsFromUI(true);
         if (v === 'cancel') applySettingsFromUI(false);
