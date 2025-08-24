@@ -6,10 +6,12 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
     />
-    <title>Minigames — Arcade</title>
+    <title>JustSadSock’s Minigames</title>
     <meta name="theme-color" content="#0b0b0f" />
     <!-- лёгкий пиксельный favicon, чтобы не было 404 -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect width='16' height='16' fill='%230b0b0f'/%3E%3Crect x='3' y='3' width='10' height='10' fill='%23c7d6ff'/%3E%3Crect x='5' y='5' width='6' height='6' fill='%234b5a8c'/%3E%3C/svg%3E">
+    <!-- Пиксель-шрифт для ретро-вида -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
     <!-- Все эффекты — чистый код. Ни картинок, ни библиотек. -->
     <link rel="preload" href="./styles.css" as="style" />
     <link rel="stylesheet" href="./styles.css" />
@@ -23,12 +25,14 @@
 
     <!-- Вся UI-рамка автомата -->
     <div class="cabinet">
-      <!-- Маркиза (умеренная, ретро-кабинет, без неона) -->
+      <!-- Маркиза (ретро, мягкая) -->
       <header class="marquee">
+        <!-- Пиксельный канвас подложка для шапки -->
+        <canvas id="px-header" class="px-layer" aria-hidden="true"></canvas>
         <div class="marquee-inner">
           <div class="logo">
-            <span class="logo-shadow">MINIGAMES</span>
-            <span class="logo-front">MINIGAMES</span>
+            <span class="logo-shadow">JustSadSock’s</span>
+            <span class="logo-front">Minigames</span>
           </div>
           <div class="header-right">
             <button class="coin-btn" id="insertCoinBtn" title="Вставить монету (C)" aria-label="Insert coin">
@@ -45,12 +49,17 @@
             <button id="settingsBtn" class="settings-btn" title="Настройки" aria-label="Открыть настройки">
               <span class="gear"></span>
             </button>
+            <button id="avatarBtn" class="settings-btn" title="Аватар" aria-label="Редактор аватара">
+              <span class="gear"></span>
+            </button>
           </div>
         </div>
       </header>
 
       <!-- Панель статуса -->
       <div class="statusbar" role="status" aria-live="polite">
+        <!-- Пиксельная подложка -->
+        <canvas id="px-status" class="px-layer" aria-hidden="true"></canvas>
         <div class="status-left">
           <span class="led led-green" id="ledReady"></span> READY
         </div>
@@ -71,6 +80,8 @@
 
       <!-- Низ автомата: кнопки управления -->
       <footer class="controlbar">
+        <!-- Пиксельная подложка -->
+        <canvas id="px-footer" class="px-layer" aria-hidden="true"></canvas>
         <div class="control-left">
           <button class="px-btn" data-nav="up" title="Наверх (↑)">▲</button>
           <button class="px-btn" data-nav="down" title="Вниз (↓)">▼</button>
@@ -84,6 +95,15 @@
           <button class="px-btn" id="scanBtn" title="Сканлайны вкл/выкл">SCAN</button>
         </div>
       </footer>
+    </div>
+
+    <!-- Оверлей игры: монтируем реальные модули из ./games/<slug>/module.js -->
+    <div id="gameOverlay" class="game-overlay hidden" aria-hidden="true">
+      <div class="game-bar">
+        <button id="btnBackToMenu" class="px-btn" title="Назад в меню (Esc)">MENU</button>
+        <div class="game-title" id="gameTitle">—</div>
+      </div>
+      <div id="gameMount" class="game-mount" role="region" aria-label="Игровое поле"></div>
     </div>
 
     <!-- Модалка настроек -->
@@ -124,6 +144,42 @@
         <div class="modal-actions">
           <button class="px-btn" value="cancel">ОТМЕНА</button>
           <button class="px-btn primary" value="ok">OK</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Модалка аватара (пиксель-редактор) -->
+    <dialog id="avatarModal" class="px-modal">
+      <form method="dialog" class="px-modal-inner">
+        <h2>АВАТАР</h2>
+        <div class="avatar-grid">
+          <canvas id="avatarEditor" width="128" height="128" class="avatar-editor" aria-label="Редактор пиксель-аватара"></canvas>
+          <div class="avatar-controls">
+            <label class="select">
+              <span>КОЖА</span>
+              <select id="skinSelect"></select>
+            </label>
+            <label class="select">
+              <span>ВОЛОСЫ</span>
+              <select id="hairSelect"></select>
+            </label>
+            <label class="select">
+              <span>ЦВЕТ ВОЛОС</span>
+              <select id="hairColorSelect"></select>
+            </label>
+            <label class="select">
+              <span>ГЛАЗА</span>
+              <select id="eyesSelect"></select>
+            </label>
+            <label class="select">
+              <span>РОТ</span>
+              <select id="mouthSelect"></select>
+            </label>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="px-btn" value="cancel">ОТМЕНА</button>
+          <button class="px-btn primary" value="save">СОХРАНИТЬ</button>
         </div>
       </form>
     </dialog>

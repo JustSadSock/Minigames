@@ -1,10 +1,10 @@
 /* ============================================================
-   MINIGAMES — FULL ARCADE UI, PURE CODE RENDER
-   - Canvas thumbnails (no images)
-   - WebAudio SFX (no assets)
-   - CRT layers (scanlines, vignette, flicker, noise)
-   - Palette switch, bloom, settings modal
-   - Keyboard nav, two-per-row grid, mobile scaling
+   MINIGAMES — RETRO PIXEL CABINET
+   - Loads real games from ./games/<slug>/module.js (manifest + mount/unmount)
+   - Pixel canvases for UI panels (header/status/footer)
+   - Canvas thumbnails, avatar editor (pixel face)
+   - Safe WebAudio (only after gesture)
+   - Two-per-row grid, keyboard nav
    ============================================================ */
 (function () {
   'use strict';
@@ -21,7 +21,9 @@
     volume: 0.35,
     credits: 0,
     palette: 'pico8',
-    games: [],
+    games: [],             // cards (only loaded)
+    loadedGames: {},       // slug -> module
+    slugsTried: new Set(),
     focusedIndex: 0,
     ui: {}
   };
@@ -42,7 +44,7 @@
   };
 
   /* -------------------- WebAudio -------------------- */
-  let actx, master, sfxGain;
+  let actx, master, sfxGain, audioUnlocked = false;
   const ensureAudio = () => {
     if (actx) return;
     actx = new (window.AudioContext || window.webkitAudioContext)();
@@ -51,19 +53,26 @@
     sfxGain.gain.value = state.sound ? state.volume : 0;
     sfxGain.connect(master);
     master.connect(actx.destination);
-    // Фоновый гул автомата (низкая громкость)
-    const hum = actx.createOscillator();
-    const humGain = actx.createGain();
-    hum.type = 'sine';
-    hum.frequency.value = 50; // 50Гц словно трансформатор
-    humGain.gain.value = 0.008;
-    hum.connect(humGain).connect(master);
-    hum.start();
+    // Гул автомата включаем только после разблокировки аудио
   };
+  function unlockAudio() {
+    if (!actx) ensureAudio();
+    if (audioUnlocked) return;
+    const startHum = () => {
+      const hum = actx.createOscillator();
+      const humGain = actx.createGain();
+      hum.type = 'sine';
+      hum.frequency.value = 50;
+      humGain.gain.value = 0.006;
+      hum.connect(humGain).connect(master);
+      hum.start();
+    };
+    actx.resume().then(()=>{ audioUnlocked = true; startHum(); }).catch(()=>{ /* ignore */ });
+  }
 
   const sfx = {
     beep(freq = 880, dur = 0.06) {
-      if (!state.sound) return;
+      if (!audioUnlocked || !state.sound) return;
       ensureAudio();
       const o = actx.createOscillator();
       const g = actx.createGain();
@@ -80,7 +89,7 @@
     confirm() { this.beep(660, 0.07); },
     deny() { this.beep(110, 0.12); },
     coin() {
-      if (!state.sound) return;
+      if (!audioUnlocked || !state.sound) return;
       ensureAudio();
       // «Монетка»: скат тире-генератор + щелчок
       const o = actx.createOscillator();
@@ -199,29 +208,27 @@
     // Перерисовать превью игр под палитру
     state.games.forEach(g => drawGamePreview(g.canvas, g.previewSeed, name));
     saveState();
+    // Перерисовать панельные пиксельные слои
+    drawPanelCanvas($('#px-header'), 'header');
+    drawPanelCanvas($('#px-status'), 'status');
+    drawPanelCanvas($('#px-footer'), 'footer');
   }
 
   /* -------------------- Games List -------------------- */
-  const sourceGames = [
-    { id:'space-blaster', title:'SPACE BLASTER', hiscore: 12840 },
-    { id:'dungeon-run',  title:'DUNGEON RUN',  hiscore:  8450 },
-    { id:'turbo-racer',  title:'TURBO RACER',  hiscore: 15200 },
-    { id:'puzzle-core',  title:'PUZZLE CORE',  hiscore:  4390 },
-    { id:'sky-guardian', title:'SKY GUARDIAN', hiscore: 10480 },
-    { id:'neon-tennis',  title:'NEON TENNIS',  hiscore:  9920 }
-  ];
+  // Укажи здесь слаги реальных игр из /games (мы подгрузим manifest динамически).
+  const GAME_SLUGS = ['pong','runner','breakout','rogue','tactics'];
 
-  function createGameCard({ id, title, hiscore }, idx) {
+  function createGameCard({ slug, title, caption = '', hiscore = 0 }, idx) {
     const wrap = document.createElement('div');
     wrap.className = 'card';
     wrap.tabIndex = 0;
     wrap.setAttribute('role','listitem');
     wrap.dataset.index = idx;
     wrap.innerHTML = `
-      <div class="card-title">${title}</div>
+      <div class="card-title">${(title||slug||'GAME').toUpperCase()}</div>
       <canvas class="card-canvas" width="160" height="120" aria-hidden="true"></canvas>
       <div class="card-footer">
-        <div class="hiscore">HI-SCORE ${pad2(Math.floor(hiscore/100))}${String(hiscore%100).padStart(2,'0')}</div>
+        <div class="hiscore">${caption ? caption : `HI-SCORE ${pad2(Math.floor(hiscore/100))}${String(hiscore%100).padStart(2,'0')}`}</div>
         <button class="start">START</button>
       </div>
     `;
@@ -296,6 +303,43 @@
     }
   }
 
+  /* -------------------- Pixel panels for UI -------------------- */
+  function drawPanelCanvas(canvas, kind) {
+    if (!canvas) return;
+    const dpr = Math.max(1, devicePixelRatio || 1);
+    const w = canvas.parentElement.clientWidth || innerWidth;
+    const h = canvas.parentElement.clientHeight || 60;
+    canvas.width = Math.max(1, w * dpr);
+    canvas.height = Math.max(1, h * dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    // Палитра
+    const pal = palettes[state.palette] || palettes.pico8;
+    const base = pal[0] || '#1d2b53';
+    const edge = pal[4] || '#5f574f';
+    // Подложка
+    ctx.fillStyle = withAlpha(base, 0.25);
+    ctx.fillRect(0,0,w,h);
+    // Шахматный паттерн
+    ctx.fillStyle = withAlpha(edge, 0.08);
+    for (let y=0; y<h; y+=6) for (let x= (y/6)%2?0:3; x<w; x+=6) ctx.fillRect(x,y,3,3);
+    // Рамки 2px
+    ctx.strokeStyle = withAlpha('#000', 0.8);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1,1,w-2,h-2);
+    ctx.strokeStyle = withAlpha(edge, 0.7);
+    ctx.strokeRect(3,3,w-6,h-6);
+  }
+
+  function resizePanels() {
+    drawPanelCanvas($('#px-header'), 'header');
+    drawPanelCanvas($('#px-status'), 'status');
+    drawPanelCanvas($('#px-footer'), 'footer');
+  }
+
   /* -------------------- Build UI -------------------- */
   function build() {
     loadState();
@@ -305,20 +349,29 @@
     state.ui.coinLed = $('#coinLed');
     state.ui.gamesGrid = $('#gamesGrid');
     state.ui.hud = $('#hud');
+    state.ui.gameOverlay = $('#gameOverlay');
+    state.ui.gameMount = $('#gameMount');
+    state.ui.gameTitle = $('#gameTitle');
 
     // ник
     $('#nickDisplay').textContent = state.ui.nickDisplay?.textContent || (JSON.parse(localStorage.getItem(storageKey)||'{}').nick || '@player');
     drawAvatar(state.ui.avatar, $('#nickDisplay').textContent);
     state.ui.credits.textContent = pad2(state.credits);
 
-    // Games
+    // UI pixel panels
+    resizePanels();
+
+    // Games: попытаемся загрузить каждый slug и, если модуль зарегистрировался, добавим карточку
     state.games = [];
-    sourceGames.forEach((g, idx) => {
-      const card = createGameCard(g, idx);
-      state.games.push(card);
-      state.ui.gamesGrid.appendChild(card.el);
+    let idx = 0;
+    GAME_SLUGS.forEach((slug) => {
+      tryLoadManifest(slug).then((man) => {
+        const card = createGameCard({ slug, title: man.name || slug, caption: man.caption || '' }, idx++);
+        state.games.push(card);
+        state.ui.gamesGrid.appendChild(card.el);
+        if (state.games.length === 1) focusCard(0, false);
+      }).catch(()=>{/* пропускаем отсутствующие игры */});
     });
-    focusCard(state.focusedIndex);
 
     // Palettes + toggles
     applyPalette(state.palette);
@@ -339,10 +392,11 @@
   function focusCard(i, smooth=true) {
     state.focusedIndex = clamp(i, 0, state.games.length-1);
     state.games.forEach((g, ix)=> g.el.dataset.focused = (ix===state.focusedIndex) ? 'true' : 'false');
-    const el = state.games[state.focusedIndex].el;
+    const el = state.games[state.focusedIndex]?.el;
+    if (!el) return;
     el.focus({ preventScroll:true });
     el.scrollIntoView({ block:'nearest', behavior: smooth? 'smooth' : 'auto' });
-    sfx.click();
+    // не трогаем звук до первого жеста
   }
   function moveFocus(delta) {
     // два столбца: вверх/вниз с шагом 2, влево/вправо с шагом 1
@@ -371,11 +425,10 @@
   }
 
   function launchGame(idx) {
-    const g = sourceGames[idx];
-    // Показываем псевдо-загрузку
-    hud(`LOADING ${g.title}...`, 1200);
-    // Контент игры не требуется — здесь «демо»
-    setTimeout(()=> hud(`${g.title} — COMING SOON`, 1200), 1200);
+    const card = state.games[idx];
+    if (!card) return;
+    const slug = GAME_SLUGS[idx] || card.el.querySelector('.card-title')?.textContent?.toLowerCase().replace(/\s+/g,'-') || '';
+    openGameBySlug(slug);
   }
 
   function hud(text, ms=1000) {
@@ -383,6 +436,74 @@
     h.textContent = text;
     h.style.opacity = '1';
     setTimeout(()=>{ h.style.opacity='0'; }, ms);
+  }
+
+  /* -------------------- Game Loader -------------------- */
+  function tryLoadManifest(slug) {
+    return new Promise((resolve, reject) => {
+      if (!slug || state.slugsTried.has(slug)) {
+        // может уже зарегистрирован
+        const mod = getRegisteredModule(slug);
+        if (mod && mod.manifest) return resolve(mod.manifest);
+      }
+      state.slugsTried.add(slug);
+      const existing = getRegisteredModule(slug);
+      if (existing && existing.manifest) return resolve(existing.manifest);
+      const s = document.createElement('script');
+      s.src = `./games/${slug}/module.js`;
+      s.async = true;
+      s.onload = () => {
+        const mod = getRegisteredModule(slug);
+        if (mod && mod.manifest) resolve(mod.manifest);
+        else reject(new Error(`Модуль ${slug} не зарегистрирован`));
+      };
+      s.onerror = () => reject(new Error(`Не удалось загрузить games/${slug}/module.js`));
+      document.head.appendChild(s);
+    });
+  }
+  function getRegisteredModule(slug) {
+    const scope = (window.__Minigames || window.__DeepFlyGames || {});
+    return scope[slug];
+  }
+  let currentGame = null, currentSlug = '';
+  async function openGameBySlug(slug) {
+    try {
+      const mod = getRegisteredModule(slug) || await (async()=>{ await tryLoadManifest(slug); return getRegisteredModule(slug); })();
+      if (!mod || !mod.mount) throw new Error('Bad module');
+      // Показать оверлей
+      state.ui.gameOverlay.classList.remove('hidden');
+      state.ui.gameOverlay.setAttribute('aria-hidden','false');
+      state.ui.gameTitle.textContent = (mod.manifest?.name || slug).toUpperCase();
+      // Очистить предыдущее
+      state.ui.gameMount.innerHTML = '';
+      // Контекст для игр (минимальный)
+      const ctx = {
+        root: state.ui.gameMount,
+        store: { get:(k,d)=>{ try{ return JSON.parse(localStorage.getItem('game.'+slug+'.'+k)) ?? d; }catch{ return d; } },
+                 set:(k,v)=>localStorage.setItem('game.'+slug+'.'+k, JSON.stringify(v)) },
+        bus: new EventTarget()
+      };
+      if (currentGame && currentGame.unmount) { try{ currentGame.unmount(); }catch{} }
+      currentGame = await mod.mount(state.ui.gameMount, ctx);
+      currentSlug = slug;
+      location.hash = `#game=${encodeURIComponent(slug)}`;
+    } catch (e) {
+      hud(`CAN'T LOAD: ${slug}`, 1200);
+    }
+  }
+  function closeGame() {
+    if (currentGame && currentGame.unmount) { try{ currentGame.unmount(); }catch{} }
+    currentGame = null; currentSlug='';
+    state.ui.gameOverlay.classList.add('hidden');
+    state.ui.gameOverlay.setAttribute('aria-hidden','true');
+    state.ui.gameMount.innerHTML = '';
+    if (location.hash.includes('game=')) history.replaceState(null,'', location.pathname + location.search);
+  }
+  // deep link
+  function syncFromHash() {
+    const m = location.hash.match(/game=([\w-]+)/);
+    if (m) openGameBySlug(m[1]);
+    else closeGame();
   }
 
   /* -------------------- Settings -------------------- */
@@ -417,7 +538,7 @@
   /* -------------------- Events -------------------- */
   function bindEvents() {
     $('#insertCoinBtn').addEventListener('click', ()=>{
-      ensureAudio();
+      unlockAudio();
       state.credits = clamp(state.credits + 1, 0, 99);
       state.ui.credits.textContent = pad2(state.credits);
       state.ui.coinLed.style.filter = 'brightness(2)';
@@ -437,6 +558,7 @@
       sfx.confirm();
     });
     $('#settingsBtn').addEventListener('click', openSettings);
+    $('#avatarBtn').addEventListener('click', openAvatar);
     $('#startBtn').addEventListener('click', ()=> tryStartGame(state.focusedIndex));
     $('#randomBtn').addEventListener('click', ()=>{
       const i = (Math.random()*state.games.length)|0;
@@ -454,6 +576,7 @@
       hud(state.scan?'SCANLINES ON':'SCANLINES OFF', 700);
       saveState();
     });
+    $('#btnBackToMenu').addEventListener('click', ()=>{ closeGame(); });
 
     // Навигация с клавиатуры
     addEventListener('keydown', (e)=>{
@@ -466,10 +589,16 @@
       if (e.key.toLowerCase() === 'r') { $('#randomBtn').click(); }
       if (e.key === 'Enter') { tryStartGame(state.focusedIndex); }
       if (e.key === 'Escape') {
-        const dlg = $('#settingsModal');
-        if (dlg.open) { dlg.close(); sfx.deny(); }
+        const sdlg = $('#settingsModal');
+        const adlg = $('#avatarModal');
+        if (sdlg.open) { sdlg.close(); sfx.deny(); return; }
+        if (adlg.open) { adlg.close('cancel'); sfx.deny(); return; }
+        if (!state.ui.gameOverlay.classList.contains('hidden')) { closeGame(); return; }
       }
     });
+    // Разблокировка аудио на первый жест
+    addEventListener('pointerdown', unlockAudio, { once:true, passive:true });
+    addEventListener('keydown', unlockAudio, { once:true });
 
     // Навигация кнопками
     $$('[data-nav]').forEach(btn=>{
@@ -495,6 +624,97 @@
       applyPalette(e.target.value);
       sfx.click();
     });
+
+    // Hash routing for games
+    window.addEventListener('hashchange', syncFromHash);
+    syncFromHash();
+
+    // Resize pixel panels
+    addEventListener('resize', resizePanels, { passive:true });
+  }
+
+  /* -------------------- Avatar Editor -------------------- */
+  const AV = {
+    skin: ['#f7e6d3','#eac9a2','#d8a577','#b37b4f','#8f5a36','#6b3f26'],
+    hairColors: ['#2b2b2b','#4b3a2a','#6b4b3b','#8c6a4a','#b58a5a','#e0c08a','#c72e2e','#6e37a6','#2e6eb0'],
+    eyes: [
+      (ctx,S,x,y)=>{ ctx.fillStyle='#0b0b0f'; ctx.fillRect(x+5*S,y+6*S,S,S); ctx.fillRect(x+10*S,y+6*S,S,S); },
+      (ctx,S,x,y)=>{ ctx.fillStyle='#0b0b0f'; ctx.fillRect(x+5*S,y+6*S,2*S,S); ctx.fillRect(x+9*S,y+6*S,2*S,S); },
+      (ctx,S,x,y)=>{ ctx.fillStyle='#0b0b0f'; ctx.fillRect(x+5*S,y+6*S,S,2*S); ctx.fillRect(x+10*S,y+6*S,S,2*S); },
+      (ctx,S,x,y)=>{ ctx.fillStyle='#0b0b0f'; ctx.fillRect(x+5*S,y+6*S,2*S,2*S); ctx.fillRect(x+9*S,y+6*S,2*S,2*S); },
+    ],
+    mouths: [
+      (ctx,S,x,y)=>{ ctx.fillStyle='#7a3b2a'; ctx.fillRect(x+7*S,y+10*S,S,S); },
+      (ctx,S,x,y)=>{ ctx.fillStyle='#7a3b2a'; ctx.fillRect(x+7*S,y+10*S,2*S,S); },
+      (ctx,S,x,y)=>{ ctx.fillStyle='#7a3b2a'; ctx.fillRect(x+7*S,y+10*S,3*S,S); },
+      (ctx,S,x,y)=>{ ctx.fillStyle='#7a3b2a'; ctx.fillRect(x+7*S,y+11*S,2*S,S); },
+    ],
+    hairStyles: [
+      (ctx,S,x,y,color)=>{ ctx.fillStyle=color; for(let i=3;i<13;i++) ctx.fillRect(x+i*S,y+2*S,S,S); for(let i=4;i<12;i++) ctx.fillRect(x+i*S,y+3*S,S,S); },
+      (ctx,S,x,y,color)=>{ ctx.fillStyle=color; for(let i=3;i<13;i++) ctx.fillRect(x+i*S,y+2*S,S,S); for(let i=4;i<12;i++) ctx.fillRect(x+i*S,y+3*S,S,S); ctx.fillRect(x+4*S,y+4*S,S,S); ctx.fillRect(x+11*S,y+4*S,S,S); },
+      (ctx,S,x,y,color)=>{ ctx.fillStyle=color; for(let i=3;i<13;i++) ctx.fillRect(x+i*S,y+2*S,S,S); for(let i=4;i<12;i++) ctx.fillRect(x+i*S,y+3*S,S,S); ctx.fillRect(x+13*S,y+4*S,S,S); ctx.fillRect(x+14*S,y+5*S,S,S); },
+      (ctx,S,x,y,color)=>{ ctx.fillStyle=color; for(let i=3;i<13;i++) ctx.fillRect(x+i*S,y+2*S,S,S); for(let i=4;i<12;i++) ctx.fillRect(x+i*S,y+3*S,S,S); [5,7,9,11].forEach(ix=>ctx.fillRect(x+ix*S,y+1*S,S,S)); },
+      (ctx,S,x,y,color)=>{ ctx.fillStyle=color; for(let i=3;i<13;i++) ctx.fillRect(x+i*S,y+2*S,S,S); for(let i=4;i<12;i++) ctx.fillRect(x+i*S,y+3*S,S,S); for(let j=3;j<6;j++) ctx.fillRect(x+3*S,y+j*S,S,S); },
+      (ctx,S,x,y,color)=>{ ctx.fillStyle=color; for(let i=3;i<13;i++) ctx.fillRect(x+i*S,y+2*S,S,S); for(let i=4;i<12;i++) ctx.fillRect(x+i*S,y+3*S,S,S); ctx.fillRect(x+3*S,y+4*S,S,S); ctx.fillRect(x+12*S,y+4*S,S,S); ctx.fillRect(x+3*S,y+5*S,S,S); ctx.fillRect(x+12*S,y+5*S,S,S); },
+    ]
+  };
+  let avatarData = { skin:0, hairStyle:0, hairColor:0, eyes:0, mouth:0 };
+  function drawAvatarEditorPreview(canvas, data) {
+    const ctx = canvas.getContext('2d');
+    const W=16,H=16,S=8, x=0, y=0;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // bg
+    ctx.fillStyle = '#0b0f14'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    // head
+    const skin = AV.skin[data.skin] || AV.skin[0];
+    const rows=[[5,10],[4,11],[3,12],[3,12],[3,12],[3,12],[4,11],[5,10]];
+    for(let i=0;i<rows.length;i++){ const [a,b]=rows[i]; for(let xx=a;xx<b;xx++) ctx.fillStyle=skin, ctx.fillRect((x+xx)*S,(y+3+i)*S,S,S); }
+    for(let xx=6;xx<10;xx++) ctx.fillRect((x+xx)*S,(y+11)*S,S,S);
+    ctx.fillRect((x+2)*S,(y+6)*S,S,S); ctx.fillRect((x+13)*S,(y+6)*S,S,S);
+    // hair
+    const hcol = AV.hairColors[data.hairColor] || AV.hairColors[0];
+    AV.hairStyles[data.hairStyle%AV.hairStyles.length](ctx,S,x,y,hcol);
+    // eyes
+    AV.eyes[data.eyes%AV.eyes.length](ctx,S,x,y);
+    // mouth
+    AV.mouths[data.mouth%AV.mouths.length](ctx,S,x,y);
+    // shine
+    ctx.fillStyle='rgba(255,255,255,.15)'; ctx.fillRect((x+5)*S,(y+4)*S,S,S);
+  }
+  function applyAvatarToHeader() {
+    drawAvatar(state.ui.avatar, $('#nickDisplay').textContent);
+  }
+  function openAvatar() {
+    const dlg = $('#avatarModal');
+    const skinSel = $('#skinSelect'), hairSel = $('#hairSelect'), hairColSel = $('#hairColorSelect'), eyesSel = $('#eyesSelect'), mouthSel = $('#mouthSelect');
+    skinSel.innerHTML = AV.skin.map((c,i)=>`<option value="${i}">${i+1}</option>`).join('');
+    hairSel.innerHTML = AV.hairStyles.map((_,i)=>`<option value="${i}">${i+1}</option>`).join('');
+    hairColSel.innerHTML = AV.hairColors.map((c,i)=>`<option value="${i}">${i+1}</option>`).join('');
+    eyesSel.innerHTML = AV.eyes.map((_,i)=>`<option value="${i}">${i+1}</option>`).join('');
+    mouthSel.innerHTML = AV.mouths.map((_,i)=>`<option value="${i}">${i+1}</option>`).join('');
+    const persisted = JSON.parse(localStorage.getItem('avatar.data')||'null');
+    if (persisted) avatarData = persisted;
+    skinSel.value = avatarData.skin; hairSel.value = avatarData.hairStyle; hairColSel.value = avatarData.hairColor; eyesSel.value = avatarData.eyes; mouthSel.value = avatarData.mouth;
+    const editor = $('#avatarEditor');
+    const redraw = ()=> drawAvatarEditorPreview(editor, avatarData);
+    [skinSel,hairSel,hairColSel,eyesSel,mouthSel].forEach(sel=>{
+      sel.onchange = ()=>{ avatarData.skin=+skinSel.value; avatarData.hairStyle=+hairSel.value; avatarData.hairColor=+hairColSel.value; avatarData.eyes=+eyesSel.value; avatarData.mouth=+mouthSel.value; redraw(); };
+    });
+    redraw();
+    dlg.showModal();
+    dlg.addEventListener('click', (e)=>{
+      if (e.target && e.target.tagName==='BUTTON') {
+        if (e.target.value==='save') {
+          localStorage.setItem('avatar.data', JSON.stringify(avatarData));
+          applyAvatarToHeader();
+          dlg.close();
+          sfx.confirm();
+        } else if (e.target.value==='cancel') {
+          dlg.close(); sfx.deny();
+        }
+      }
+    }, { once:true });
   }
 
   /* -------------------- Init -------------------- */

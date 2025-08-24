@@ -28,16 +28,25 @@ html, body {
   background: var(--bg);
   color: var(--ink);
   overflow: hidden;
+  font-family: 'Press Start 2P', ui-monospace, monospace;
 }
 
 /* ======== CRT-слои ======== */
+#crt-canvas { z-index: 1; }
+#scanlines { z-index: 2; }
+#vignette  { z-index: 3; }
+#flicker   { z-index: 4; }
 #crt-canvas, #scanlines, #vignette, #flicker {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
 }
-#crt-canvas { z-index: 1; }
+.px-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
 #scanlines {
   z-index: 2;
   background:
@@ -86,12 +95,15 @@ html, body {
     repeating-linear-gradient(45deg, rgba(255,255,255,.015) 0 8px, transparent 8px 16px);
   border: calc(var(--px) * 1) solid #06070b;
   box-shadow: 0 0 0 transparent; /* убрали неоновую подсветку */
+  position: relative;
 }
 .marquee-inner {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
   padding: calc(var(--px) * 2);
+  position: relative;
+  z-index: 1;
 }
 .logo {
   position: relative;
@@ -103,7 +115,6 @@ html, body {
   display: block;
   font-size: clamp(14px, 4.2vw, 36px);
   line-height: 1;
-  font-family: monospace;
 }
 .logo-front {
   color: var(--ink);
@@ -201,7 +212,9 @@ html, body {
   background:
     linear-gradient(180deg, #0f121a, #080a10);
   border: calc(var(--px)*0.5) solid #070a0f;
+  position: relative;
 }
+.statusbar > * { position: relative; z-index: 1; }
 .status-left, .status-center, .status-right {
   font-family: monospace;
   font-size: 12px;
@@ -304,7 +317,9 @@ html, body {
   padding: calc(var(--px)*1.5) calc(var(--px)*2);
   background: linear-gradient(180deg, #080a10, #05070a);
   border: calc(var(--px)*0.5) solid #060910;
+  position: relative;
 }
+.controlbar > * { position: relative; z-index: 1; }
 .control-left, .control-center, .control-right {
   display: grid; grid-auto-flow: column; gap: calc(var(--px)*1.5);
 }
@@ -353,9 +368,47 @@ html, body {
 .hud {
   position: fixed; z-index: 9; inset: auto 0 calc(var(--px)*2) 0;
   display: grid; place-items: center; pointer-events: none;
-  font-family: monospace; font-size: 12px; color: var(--accent3);
+  font-size: 12px; color: var(--accent3);
   text-shadow: 0 0 calc(var(--px)*1) #fc0, 0 0 calc(var(--px)*2) #960;
 }
+
+/* ======== Оверлей игры ======== */
+.game-overlay.hidden { display: none; }
+.game-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  background: rgba(0,0,0,.7);
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.game-bar {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: calc(var(--px)*2);
+  background: #0c1019;
+  border-bottom: 2px solid #03050a;
+  padding: calc(var(--px)*2);
+}
+.game-title { font-size: 12px; color: #c7d6ff; padding-left: calc(var(--px)*1); }
+.game-mount { position: relative; background:#0b0f14; }
+.game-mount > * { position: absolute; inset: 0; }
+
+/* ======== Аватар-редактор ======== */
+.avatar-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: calc(var(--px)*2);
+  align-items: start;
+}
+.avatar-editor {
+  width: 128px; height: 128px;
+  background: #0b0f14;
+  border: calc(var(--px)*1) solid #0a0d14;
+}
+.avatar-controls { display: grid; gap: calc(var(--px)*1.5); }
+.select select { font-family: inherit; }
 
 /* ======== Палитры (меняются переменные) ======== */
 .palette-pico8 { --bg:#1d2b53; --panel:#0b0b0f; --panel2:#11141a; --accent:#ff004d; --accent2:#00e756; --accent3:#fff024; }
