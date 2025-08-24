@@ -43,6 +43,21 @@
       display:flex;align-items:center;gap:12px;
     }
     header{position:sticky;top:0;z-index:5}
+    /* Фоновый пиксель-паттерн без rAF */
+    .pxbg{
+      position:fixed;inset:0;z-index:0;pointer-events:none;
+      background:
+        radial-gradient(#1d2240 1px, transparent 1px) 0 0/6px 6px,
+        radial-gradient(#161b33 1px, transparent 1px) 3px 3px/6px 6px,
+        linear-gradient(#0e1120, #10131c);
+      opacity:.9;
+      animation: twinkle 6s steps(4) infinite;
+    }
+    @keyframes twinkle{
+      0%{filter:brightness(1)}
+      50%{filter:brightness(1.08)}
+      100%{filter:brightness(1)}
+    }
     /* Верхняя панель: аватар (круг), ник, шестерёнка */
     .hdr-left{display:flex;align-items:center;gap:8px;min-width:0}
     .hdr-grow{flex:1;display:flex;justify-content:center;min-width:0}
@@ -108,6 +123,13 @@
     .pbtn.green{  background:linear-gradient(#6efc92,#30c76b); box-shadow:inset 0 2px 0 #b6ffd0,inset 0 -2px 0 #1f7a42,0 2px 0 rgba(0,0,0,.5);}
     .pbtn.yellow{ background:linear-gradient(#ffe680,#e3b528); box-shadow:inset 0 2px 0 #fff3be,inset 0 -2px 0 #7a6710,0 2px 0 rgba(0,0,0,.5);}
     .pbtn.red{    background:linear-gradient(#ff6d6d,#d43a3a); box-shadow:inset 0 2px 0 #ffb3b3,inset 0 -2px 0 #7a2020,0 2px 0 rgba(0,0,0,.5);}
+    .pbtn:hover{filter:brightness(1.1); text-shadow:0 1px 0 rgba(0,0,0,.6)}
+    .pbtn:focus{outline:2px solid var(--hl); outline-offset:2px}
+    /* Поля ввода в ретро-стиле */
+    input[type="text"]{
+      font:12px 'Press Start 2P',ui-monospace,monospace; color:var(--ink); background:#0f1224;
+      border:var(--px) solid var(--border-dark); outline:var(--px) solid var(--border-mid); outline-offset:-1px; padding:6px 8px;
+    }
     @media(max-width:860px){
       main{grid-template-columns:1fr;grid-template-rows:auto auto;max-width:720px;margin:0 auto;}
       .side{max-width:none;}
@@ -124,6 +146,7 @@
   </style>
 </head>
 <body>
+  <div class="pxbg" aria-hidden="true"></div>
   <header>
     <div class="hdr-left">
       <canvas id="btnAvatar" class="pixel avatarSmall" width="32" height="32"></canvas>
@@ -146,8 +169,8 @@
             <div class="name" id="playerName">Игрок</div>
             <div class="stats" id="playerStats">готов • ♥ 3 • ★ 0</div>
             <div class="row" style="margin-top:8px">
-              <canvas id="profileSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-              <canvas id="profileReset" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
+              <button id="profileSaveBtn" class="pbtn green">Profile</button>
+              <button id="profileResetBtn" class="pbtn red">Reset</button>
             </div>
           </div>
         </div>
@@ -164,21 +187,21 @@
 
   <div id="settingsDialog" class="backdrop hidden">
     <div id="settingsPanel" class="dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-      <canvas id="settingsClose" class="pixel" width="16" height="16" style="position:absolute;top:8px;right:8px;width:16px;height:16px;"></canvas>
+      <button id="settingsCloseBtn" class="pbtn red" style="position:absolute;top:8px;right:8px;min-height:auto;padding:4px 6px">X</button>
       <h2 id="settingsTitle">Настройки</h2>
       <label><input type="checkbox" id="muteToggle"> Звук</label><br>
       <label><input type="checkbox" id="vfxToggle"> Эффекты</label><br>
       <label><input type="checkbox" id="themeAltToggle"> Альт. тема</label><br>
       <div class="row" style="margin-top:8px;">
-        <canvas id="settingsSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-        <canvas id="settingsCancel" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
+        <button id="settingsSaveBtn" class="pbtn green">Save</button>
+        <button id="settingsCancelBtn" class="pbtn yellow">Cancel</button>
       </div>
     </div>
   </div>
 
   <div id="avatarDialog" class="backdrop hidden">
     <div id="avatarPanel" class="dialog" role="dialog" aria-modal="true" aria-labelledby="avatarTitle">
-      <canvas id="avatarClose" class="pixel" width="16" height="16" style="position:absolute;top:8px;right:8px;width:16px;height:16px;"></canvas>
+      <button id="avatarCloseBtn" class="pbtn red" style="position:absolute;top:8px;right:8px;min-height:auto;padding:4px 6px">X</button>
       <h2 id="avatarTitle">Профиль</h2>
       <input id="nickInput" placeholder="Никнейм" style="font-size:16px;padding:4px;width:100%;margin-bottom:8px;" />
         <canvas id="avatarEdit" class="pixel" width="16" height="16" style="width:96px;height:96px;margin-bottom:8px;"></canvas>
@@ -201,8 +224,8 @@
         </div>
       </div>
       <div class="row" style="margin-top:8px;">
-        <canvas id="avatarSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-        <canvas id="avatarCancel" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
+        <button id="avatarSaveBtn" class="pbtn green">Save</button>
+        <button id="avatarCancelBtn" class="pbtn yellow">Cancel</button>
       </div>
     </div>
   </div>
@@ -217,6 +240,28 @@
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+  // — Лёгкие SFX (WebAudio) —
+  let AC=null; function ensureAC(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); } }
+  function beep(type='click'){
+    if(!AC) return;
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.type='square';
+    const now=AC.currentTime;
+    const f = type==='hover'? 880 : 660;
+    o.frequency.setValueAtTime(f,now);
+    g.gain.setValueAtTime(0.05,now);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+0.08);
+    o.connect(g); g.connect(AC.destination);
+    o.start(now); o.stop(now+0.09);
+  }
+  addEventListener('pointerdown',()=>ensureAC(),{once:true,passive:true});
+  document.addEventListener('pointerdown',e=>{
+    if(e.target.closest('button,.pbtn,canvas[role="button"]')) beep('click');
+  },{passive:true});
+  document.addEventListener('pointerenter',e=>{
+    if(e.target.closest('button,.pbtn')) beep('hover');
+  },{capture:true,passive:true});
 
   // Универсальная канвас-кнопка
   function makeCanvasButton(canvas, { label, drawIcon, onClick, fontPx=10, width=canvas.width, height=canvas.height }){
@@ -507,8 +552,7 @@
     avatar1.setParts(profile.avatar);
     const avatarEdit = makeAvatar($('#avatarEdit'), profile.avatar);
     // мини-аватар в шапке + ник
-    const avatarTop = makeAvatar($('#btnAvatar'), {hairStyle:0,eyes:0,mouth:0,hairColor:0});
-    avatarTop.setParts(profile.avatar);
+    const avatarTop = makeAvatar($('#btnAvatar'), profile.avatar);
     $('#nickTop').textContent = profile.nickname;
 
     let avatarDlg=null;
@@ -545,18 +589,17 @@
       avatarTop.setParts(profile.avatar);
       $('#nickTop').textContent = profile.nickname;
   }
-  makeCanvasButton($('#profileSave'),{label:'Профиль',onClick(){ openAvatarPanel($('#profileSave')); }});
-  makeCanvasButton($('#avatarSave'),{label:'Сохранить',onClick(){ saveProfile(); avatarDlg && avatarDlg.close(); }});
-  makeCanvasButton($('#avatarCancel'),{label:'Отмена',onClick(){ avatarDlg && avatarDlg.close(); }});
-  makeCanvasButton($('#avatarClose'),{label:'×',onClick(){ avatarDlg && avatarDlg.close(); }});
-  $('#avatarClose').setAttribute('aria-label','Закрыть');
-    makeCanvasButton($('#profileReset'),{label:'Сброс',onClick(){
+  $('#profileSaveBtn').addEventListener('click',()=>openAvatarPanel($('#profileSaveBtn')));
+  $('#profileResetBtn').addEventListener('click',()=>{
       store.del('profile.nickname'); store.del('profile.avatar');
       profile = { id: profile.id, nickname:'Игрок', avatar:{hairStyle:0,eyes:0,mouth:0,hairColor:0} };
       validateAvatar(profile.avatar);
       $('#playerName').textContent = profile.nickname; avatar1.setParts(profile.avatar);
-      avatarTop.setParts(profile.avatar); $('#nickTop').textContent = profile.nickname;
-    }});
+      avatarTop.setParts(profile.avatar); $('#nickTop').textContent='Игрок';
+  });
+  $('#avatarSaveBtn').addEventListener('click',()=>{ saveProfile(); avatarDlg && avatarDlg.close(); });
+  $('#avatarCancelBtn').addEventListener('click',()=>{ avatarDlg && avatarDlg.close(); });
+  $('#avatarCloseBtn').addEventListener('click',()=>{ avatarDlg && avatarDlg.close(); });
 
   // Настройки
   settings.mute = store.get('settings.mute', false);
@@ -567,7 +610,7 @@
   $('#vfxToggle').checked = settings.vfx;
   $('#themeAltToggle').checked = settings.theme==='alt';
   let settingsDlg=null;
-  makeCanvasButton($('#settingsSave'),{label:'Сохранить',onClick(){
+  $('#settingsSaveBtn').addEventListener('click',()=>{
     settings.mute = $('#muteToggle').checked;
     settings.vfx = $('#vfxToggle').checked;
     settings.theme = $('#themeAltToggle').checked ? 'alt' : 'dark';
@@ -576,10 +619,9 @@
     store.set('settings.theme', settings.theme);
     theme.apply(settings.theme);
     settingsDlg && settingsDlg.close();
-  }});
-  makeCanvasButton($('#settingsCancel'),{label:'Отмена',onClick(){ settingsDlg && settingsDlg.close(); }});
-  makeCanvasButton($('#settingsClose'),{label:'×',onClick(){ settingsDlg && settingsDlg.close(); }});
-  $('#settingsClose').setAttribute('aria-label','Закрыть');
+  });
+  $('#settingsCancelBtn').addEventListener('click',()=>{ settingsDlg && settingsDlg.close(); });
+  $('#settingsCloseBtn').addEventListener('click',()=>{ settingsDlg && settingsDlg.close(); });
 
   // Игровые плитки (ретро-карточки, 2-в-ряд), без постоянной анимации
     function drawGameIcon(ctx, slug){
@@ -590,15 +632,28 @@
         for(let x=0;x<48;x+=6){ ctx.fillStyle=((x+y)/6%2===0)?odd:even; ctx.fillRect(x,y,6,6); }
       }
       if(slug==='pong'){
-      ctx.fillStyle='#ff77bd'; ctx.fillRect(4,8,6,32);
-      ctx.fillStyle='#68c7ff'; ctx.fillRect(38,8,6,32);
-      ctx.fillStyle='#ffd166'; ctx.fillRect(22,22,4,4);
-    }
-    if(slug==='runner'){
-      ctx.fillStyle='#ff77bd'; ctx.fillRect(16,28,12,16);
-      ctx.fillStyle='#ffd166'; ctx.fillRect(16,20,12,8);
-      ctx.fillStyle='#ff6b6b'; ctx.fillRect(36,18,12,28);
-    }
+        ctx.fillStyle='#ff77bd'; ctx.fillRect(4,8,6,32);
+        ctx.fillStyle='#68c7ff'; ctx.fillRect(38,8,6,32);
+        ctx.fillStyle='#ffd166'; ctx.fillRect(22,22,4,4);
+      } else if(slug==='runner'){
+        ctx.fillStyle='#ff77bd'; ctx.fillRect(16,28,12,16);
+        ctx.fillStyle='#ffd166'; ctx.fillRect(16,20,12,8);
+        ctx.fillStyle='#ff6b6b'; ctx.fillRect(36,18,12,28);
+      } else if(slug==='breakout'){
+        ctx.fillStyle='#68c7ff';
+        for(let y=6;y<=18;y+=6){ for(let x=6;x<=42;x+=6){ ctx.fillRect(x,y,4,4);} }
+        ctx.fillStyle='#ffd166'; ctx.fillRect(24,28,4,4); // ball
+        ctx.fillStyle='#ff77bd'; ctx.fillRect(16,36,16,4); // paddle
+      } else if(slug==='rogue'){
+        ctx.fillStyle='#9ce07a';
+        for(let y=10;y<=34;y+=8){ for(let x=10;x<=34;x+=8){ ctx.fillRect(x,y,6,6);} }
+        ctx.fillStyle='#ffd166'; ctx.fillRect(24,24,4,4);
+      } else if(slug==='tactics'){
+        ctx.fillStyle='#7ad6ff';
+        for(let y=10;y<=34;y+=8){ for(let x=10;x<=34;x+=8){ ctx.strokeStyle='#7ad6ff'; ctx.strokeRect(x,y,6,6);} }
+        ctx.fillStyle='#ff6d6d'; ctx.fillRect(28,22,6,6);
+        ctx.fillStyle='#6efc92'; ctx.fillRect(14,26,6,6);
+      }
   }
   function drawGameTile(ctx,{slug,title,caption,state,pulse=0,scan=0,w,h}){
     w=w||ctx.canvas.width; h=h||ctx.canvas.height;
