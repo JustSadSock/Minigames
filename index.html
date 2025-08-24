@@ -24,7 +24,7 @@
     <div id="flicker" aria-hidden="true"></div>
 
     <!-- Вся UI-рамка автомата -->
-    <div class="cabinet">
+    <div class="cabinet" role="application" aria-label="JustSadSock’s Minigames">
       <!-- Маркиза (ретро, мягкая) -->
       <header class="marquee">
         <!-- Пиксельный канвас подложка для шапки -->
@@ -40,7 +40,7 @@
               INSERT COIN
             </button>
             <div class="account">
-              <canvas id="avatar" width="32" height="32" class="avatar-canvas" aria-label="Аватар"></canvas>
+              <canvas id="avatar" width="32" height="32" class="avatar-canvas" aria-label="Аватар" data-px="true"></canvas>
               <div class="nick-block">
                 <div class="nick" id="nickDisplay">@player</div>
                 <button class="nick-edit" id="changeNickBtn" title="Изменить ник">EDIT</button>
@@ -72,7 +72,7 @@
       </div>
 
       <!-- Меню игр: строго по два в ряд, вертикальная прокрутка -->
-      <main class="menu" role="main">
+      <main class="menu" id="menuRoot">
         <div id="gamesGrid" class="games-grid" role="list" aria-label="Список игр">
           <!-- Карточки генерируются скриптом -->
         </div>
@@ -101,9 +101,11 @@
     <div id="gameOverlay" class="game-overlay hidden" aria-hidden="true">
       <div class="game-bar">
         <button id="btnBackToMenu" class="px-btn" title="Назад в меню (Esc)">MENU</button>
-        <div class="game-title" id="gameTitle">—</div>
+        <div class="game-title" id="gameTitle" data-px="true">—</div>
       </div>
-      <div id="gameMount" class="game-mount" role="region" aria-label="Игровое поле"></div>
+      <div id="gameMount" class="game-mount" role="region" aria-label="Игровое поле">
+        <div id="gameCanvasWrap" class="game-viewport"></div>
+      </div>
     </div>
 
     <!-- Модалка настроек -->
@@ -153,7 +155,7 @@
       <form method="dialog" class="px-modal-inner">
         <h2>АВАТАР</h2>
         <div class="avatar-grid">
-          <canvas id="avatarEditor" width="128" height="128" class="avatar-editor" aria-label="Редактор пиксель-аватара"></canvas>
+          <canvas id="avatarEditor" width="128" height="128" class="avatar-editor" aria-label="Редактор пиксель-аватара" data-px="true"></canvas>
           <div class="avatar-controls">
             <label class="select">
               <span>КОЖА</span>

@@ -12,6 +12,15 @@
   /* -------------------- State -------------------- */
   const $ = (sel, p = document) => p.querySelector(sel);
   const $$ = (sel, p = document) => Array.from(p.querySelectorAll(sel));
+  const withAlpha = (hexOrCss, a = 1) => {
+    if (/^#([0-9a-f]{3}){1,2}$/i.test(hexOrCss)) {
+      const c = hexOrCss.slice(1);
+      const n = c.length === 3 ? c.split('').map(x=>x+x).join('') : c;
+      const r = parseInt(n.slice(0,2),16), g = parseInt(n.slice(2,4),16), b = parseInt(n.slice(4,6),16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
+    return hexOrCss;
+  };
 
   const state = {
     sound: true,
@@ -25,7 +34,8 @@
     loadedGames: {},       // slug -> module
     slugsTried: new Set(),
     focusedIndex: 0,
-    ui: {}
+    ui: {},
+    avatar: { skin:0, hairStyle:0, hairColor:0, eyes:0, mouth:0 }
   };
 
   /* -------------------- LocalStorage -------------------- */
@@ -40,6 +50,10 @@
       if (!raw) return;
       const s = JSON.parse(raw);
       Object.assign(state, s);
+    } catch {}
+    try {
+      const av = JSON.parse(localStorage.getItem('avatar.data')||'null');
+      if (av) state.avatar = av;
     } catch {}
   };
 
@@ -135,28 +149,28 @@
 
   /* -------------------- Avatar Identicon -------------------- */
   function drawAvatar(canvas, nick) {
-    const ctx = canvas.getContext('2d', { alpha: false });
-    const size = 32, cell = 4, n = size / cell;
-    const rand = seededRng(
-      Array.from(nick).reduce((a,c)=>((a<<5)-a + c.charCodeAt(0))>>>0, 2166136261)
-    );
+    drawAvatarFace(canvas, state.avatar, 32);
+  }
+
+  function drawAvatarFace(canvas, data, px = 32) {
+    const S = Math.max(2, Math.floor(px/16));
+    const W = 16, H = 16;
+    canvas.width = W*S; canvas.height = H*S;
+    canvas.style.width = px + 'px'; canvas.style.height = px + 'px';
+    const ctx = canvas.getContext('2d', { alpha:false });
     ctx.imageSmoothingEnabled = false;
-    ctx.fillStyle = '#031c1c'; ctx.fillRect(0,0,size,size);
-    for (let y=0; y<n; y++) {
-      for (let x=0; x<n/2; x++) {
-        const on = rand() > 0.5;
-        const col = on ? `hsl(${Math.floor(rand()*360)},100%,${rand()*50+35}%)` : '#052';
-        ctx.fillStyle = col;
-        if (on) {
-          ctx.fillRect(x*cell, y*cell, cell, cell);
-          ctx.fillRect((n-1-x)*cell, y*cell, cell, cell);
-        }
-      }
-    }
-    ctx.globalCompositeOperation = 'overlay';
-    ctx.fillStyle = 'rgba(20,255,210,0.25)';
-    ctx.fillRect(0,0,size,size);
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#0b0f14'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    const skin = AV.skin[data.skin] || AV.skin[0];
+    const rows=[[5,10],[4,11],[3,12],[3,12],[3,12],[3,12],[4,11],[5,10]];
+    for(let i=0;i<rows.length;i++){ const [a,b]=rows[i]; for(let xx=a;xx<b;xx++) ctx.fillStyle=skin, ctx.fillRect(xx*S,(3+i)*S,S,S); }
+    for(let xx=6;xx<10;xx++) ctx.fillRect(xx*S,11*S,S,S);
+    ctx.fillRect(2*S,6*S,S,S); ctx.fillRect(13*S,6*S,S,S);
+    const hcol = AV.hairColors[data.hairColor] || AV.hairColors[0];
+    AV.hairStyles[data.hairStyle%AV.hairStyles.length](ctx,S,0,0,hcol);
+    AV.eyes[data.eyes%AV.eyes.length](ctx,S,0,0);
+    AV.mouths[data.mouth%AV.mouths.length](ctx,S,0,0);
+    ctx.fillStyle='rgba(255,255,255,.15)';
+    ctx.fillRect(5*S,4*S,S,S);
   }
 
   /* -------------------- CRT Canvas Noise -------------------- */
@@ -224,6 +238,7 @@
     wrap.tabIndex = 0;
     wrap.setAttribute('role','listitem');
     wrap.dataset.index = idx;
+    wrap.dataset.slug = slug;
     wrap.innerHTML = `
       <div class="card-title">${(title||slug||'GAME').toUpperCase()}</div>
       <canvas class="card-canvas" width="160" height="120" aria-hidden="true"></canvas>
@@ -233,7 +248,9 @@
       </div>
     `;
     const cv = $('.card-canvas', wrap);
-    const seed = Math.floor(rng()*1e9) ^ idx * 2654435761;
+    const seed = (Math.floor(rng()*1e9) ^ (idx * 2654435761)) >>> 0;
+    const ro = new ResizeObserver(()=> drawGamePreview(cv, seed, state.palette));
+    ro.observe(cv);
     drawGamePreview(cv, seed, state.palette);
     const startBtn = $('.start', wrap);
     startBtn.addEventListener('click', () => tryStartGame(idx));
@@ -243,21 +260,27 @@
   }
 
   function drawGamePreview(canvas, seed, paletteName) {
+    const dpr = Math.max(1, devicePixelRatio||1);
+    const cssW = Math.max(120, Math.floor(canvas.clientWidth||160));
+    const cssH = Math.floor(cssW*3/4);
+    if (canvas.width !== cssW*dpr || canvas.height !== cssH*dpr) {
+      canvas.width = cssW*dpr; canvas.height = cssH*dpr;
+      canvas.style.width = cssW+'px'; canvas.style.height = cssH+'px';
+    }
     const ctx = canvas.getContext('2d', { alpha: false });
     ctx.imageSmoothingEnabled = false;
-    const W = canvas.width, H = canvas.height;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const W = cssW, H = cssH;
     const rnd = seededRng(seed);
     ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
-    // Безопасная палитра (fallback, чтобы не было undefined)
     const pal = (palettes && palettes[paletteName] && palettes[paletteName].length)
       ? palettes[paletteName] : palettes.pico8;
     const bg = pal[(Math.abs(seed>>3)) % pal.length] || '#1d2b53';
     const fg = pal[(Math.abs(seed>>7)) % pal.length] || '#c2c3c7';
     const ex = pal[(Math.abs(seed>>11)) % pal.length] || '#ffec27';
-    // Градиент (rgba вместо хакового '#xxxxxxee')
     const g = ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0, withAlpha(bg, 0.9));
-    g.addColorStop(1, 'rgba(0,0,0,1)');
+    g.addColorStop(0, withAlpha(bg, 0.93));
+    g.addColorStop(1, withAlpha('#000000', 1));
     ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
     // Звёзды
     for (let i=0;i<160;i++){
@@ -307,8 +330,9 @@
   function drawPanelCanvas(canvas, kind) {
     if (!canvas) return;
     const dpr = Math.max(1, devicePixelRatio || 1);
-    const w = canvas.parentElement.clientWidth || innerWidth;
-    const h = canvas.parentElement.clientHeight || 60;
+    const parent = canvas.parentElement || document.body;
+    const w = parent.clientWidth || innerWidth;
+    const h = parent.clientHeight || 60;
     canvas.width = Math.max(1, w * dpr);
     canvas.height = Math.max(1, h * dpr);
     canvas.style.width = w + 'px';
@@ -355,7 +379,7 @@
 
     // ник
     $('#nickDisplay').textContent = state.ui.nickDisplay?.textContent || (JSON.parse(localStorage.getItem(storageKey)||'{}').nick || '@player');
-    drawAvatar(state.ui.avatar, $('#nickDisplay').textContent);
+    drawAvatarFace(state.ui.avatar, state.avatar, 32);
     state.ui.credits.textContent = pad2(state.credits);
 
     // UI pixel panels
@@ -386,6 +410,7 @@
     document.querySelector(':root').style.setProperty('--scan-alpha', state.scan ? '0.06' : '0.0'); // деликатнее
     setupCrtCanvas();
     if (!state.bloom) document.body.classList.add('no-bloom');
+    fixHeightsForViewport();
   }
 
   /* -------------------- Focus / Navigation -------------------- */
@@ -427,7 +452,7 @@
   function launchGame(idx) {
     const card = state.games[idx];
     if (!card) return;
-    const slug = GAME_SLUGS[idx] || card.el.querySelector('.card-title')?.textContent?.toLowerCase().replace(/\s+/g,'-') || '';
+    const slug = GAME_SLUGS[idx] || card.el.dataset.slug || card.el.querySelector('.card-title')?.textContent?.toLowerCase().replace(/\s+/g,'-') || '';
     openGameBySlug(slug);
   }
 
@@ -462,7 +487,7 @@
     });
   }
   function getRegisteredModule(slug) {
-    const scope = (window.__Minigames || window.__DeepFlyGames || {});
+    const scope = (window.__DeepFlyGames || window.__Minigames || {});
     return scope[slug];
   }
   let currentGame = null, currentSlug = '';
@@ -474,19 +499,14 @@
       state.ui.gameOverlay.classList.remove('hidden');
       state.ui.gameOverlay.setAttribute('aria-hidden','false');
       state.ui.gameTitle.textContent = (mod.manifest?.name || slug).toUpperCase();
-      // Очистить предыдущее
-      state.ui.gameMount.innerHTML = '';
-      // Контекст для игр (минимальный)
-      const ctx = {
-        root: state.ui.gameMount,
-        store: { get:(k,d)=>{ try{ return JSON.parse(localStorage.getItem('game.'+slug+'.'+k)) ?? d; }catch{ return d; } },
-                 set:(k,v)=>localStorage.setItem('game.'+slug+'.'+k, JSON.stringify(v)) },
-        bus: new EventTarget()
-      };
+      const wrap = $('#gameCanvasWrap');
+      wrap.innerHTML = '';
+      const ctx = makeGameContext(slug, wrap);
       if (currentGame && currentGame.unmount) { try{ currentGame.unmount(); }catch{} }
-      currentGame = await mod.mount(state.ui.gameMount, ctx);
+      currentGame = await mod.mount(wrap, ctx);
       currentSlug = slug;
       location.hash = `#game=${encodeURIComponent(slug)}`;
+      fitGameArea();
     } catch (e) {
       hud(`CAN'T LOAD: ${slug}`, 1200);
     }
@@ -496,7 +516,7 @@
     currentGame = null; currentSlug='';
     state.ui.gameOverlay.classList.add('hidden');
     state.ui.gameOverlay.setAttribute('aria-hidden','true');
-    state.ui.gameMount.innerHTML = '';
+    $('#gameCanvasWrap').innerHTML = '';
     if (location.hash.includes('game=')) history.replaceState(null,'', location.pathname + location.search);
   }
   // deep link
@@ -504,6 +524,28 @@
     const m = location.hash.match(/game=([\w-]+)/);
     if (m) openGameBySlug(m[1]);
     else closeGame();
+  }
+  // Совместимый контекст игр
+  function makeGameContext(slug, rootEl){
+    const HUB_VERSION = '2.0.0';
+    const bus = new EventTarget();
+    const theme = {
+      current: state.palette,
+      apply(name){ applyPalette(name); },
+      toggle(){ const order=['pico8','c64','gb','nes']; const i=(order.indexOf(state.palette)+1)%order.length; applyPalette(order[i]); return state.palette; }
+    };
+    const store = {
+      get(key, def){ try{ const v = localStorage.getItem(`game.${slug}.${key}`); return v? JSON.parse(v) : def; }catch{ return def; } },
+      set(key, val){ localStorage.setItem(`game.${slug}.${key}`, JSON.stringify(val)); },
+      del(key){ localStorage.removeItem(`game.${slug}.${key}`); }
+    };
+    const ui = { flash: (text)=> hud(text, 1000) };
+    const input = {
+      on: (type, handler)=> window.addEventListener(type, handler),
+      off: (type, handler)=> window.removeEventListener(type, handler)
+    };
+    const net = { rest: async ()=>{ throw new Error('REST не настроен'); }, rt:{ connect:()=>({ publish(){}, subscribe(){}, close(){} }) } };
+    return { version: HUB_VERSION, bus, theme, store, ui, input, net, root: rootEl };
   }
 
   /* -------------------- Settings -------------------- */
@@ -553,7 +595,7 @@
       nick = nick.trim().replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'').slice(0,16);
       if (nick.length<3) { hud('НИК КОРОТКИЙ', 800); sfx.deny(); return; }
       $('#nickDisplay').textContent = '@'+nick;
-      drawAvatar(state.ui.avatar, '@'+nick);
+      drawAvatarFace(state.ui.avatar, state.avatar, 32);
       saveState();
       sfx.confirm();
     });
@@ -631,6 +673,7 @@
 
     // Resize pixel panels
     addEventListener('resize', resizePanels, { passive:true });
+    addEventListener('resize', ()=>{ fixHeightsForViewport(); fitGameArea(); }, { passive:true });
   }
 
   /* -------------------- Avatar Editor -------------------- */
@@ -682,9 +725,6 @@
     // shine
     ctx.fillStyle='rgba(255,255,255,.15)'; ctx.fillRect((x+5)*S,(y+4)*S,S,S);
   }
-  function applyAvatarToHeader() {
-    drawAvatar(state.ui.avatar, $('#nickDisplay').textContent);
-  }
   function openAvatar() {
     const dlg = $('#avatarModal');
     const skinSel = $('#skinSelect'), hairSel = $('#hairSelect'), hairColSel = $('#hairColorSelect'), eyesSel = $('#eyesSelect'), mouthSel = $('#mouthSelect');
@@ -698,16 +738,16 @@
     skinSel.value = avatarData.skin; hairSel.value = avatarData.hairStyle; hairColSel.value = avatarData.hairColor; eyesSel.value = avatarData.eyes; mouthSel.value = avatarData.mouth;
     const editor = $('#avatarEditor');
     const redraw = ()=> drawAvatarEditorPreview(editor, avatarData);
-    [skinSel,hairSel,hairColSel,eyesSel,mouthSel].forEach(sel=>{
-      sel.onchange = ()=>{ avatarData.skin=+skinSel.value; avatarData.hairStyle=+hairSel.value; avatarData.hairColor=+hairColSel.value; avatarData.eyes=+eyesSel.value; avatarData.mouth=+mouthSel.value; redraw(); };
-    });
+    const applyLive = ()=>{ avatarData.skin=+skinSel.value; avatarData.hairStyle=+hairSel.value; avatarData.hairColor=+hairColSel.value; avatarData.eyes=+eyesSel.value; avatarData.mouth=+mouthSel.value; redraw(); state.avatar = { ...avatarData }; drawAvatarFace(state.ui.avatar, state.avatar, 32); };
+    [skinSel,hairSel,hairColSel,eyesSel,mouthSel].forEach(sel=>{ sel.onchange = applyLive; sel.oninput = applyLive; });
     redraw();
     dlg.showModal();
     dlg.addEventListener('click', (e)=>{
       if (e.target && e.target.tagName==='BUTTON') {
         if (e.target.value==='save') {
           localStorage.setItem('avatar.data', JSON.stringify(avatarData));
-          applyAvatarToHeader();
+          state.avatar = { ...avatarData };
+          drawAvatarFace(state.ui.avatar, state.avatar, 32);
           dlg.close();
           sfx.confirm();
         } else if (e.target.value==='cancel') {
@@ -715,6 +755,20 @@
         }
       }
     }, { once:true });
+  }
+
+  /* -------------------- Layout helpers -------------------- */
+  function fixHeightsForViewport() {
+    const cab = $('.cabinet');
+    const menu = $('#menuRoot');
+    if (!cab || !menu) return;
+    // grid layout handles sizes; placeholder for future adjustments
+  }
+  function fitGameArea() {
+    const wrap = $('#gameCanvasWrap');
+    if (!wrap) return;
+    wrap.style.width = '100%';
+    wrap.style.height = '100%';
   }
 
   /* -------------------- Init -------------------- */
