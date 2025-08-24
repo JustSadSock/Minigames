@@ -3,8 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-  <meta name="theme-color" content="#1b1e35" id="themeColor">
-  <title>DeepFly — мини‑игры</title>
+  <meta name="theme-color" content="#10131c" id="themeColor">
+  <title>JustSadSock’s Minigames</title>
+  <!-- pixel font (легковесное подключение, без локальных файлов) -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <!--
     Это стартовая страница игрового хаба.  Она не требует сборки или внешних
     библиотек и может быть открыта напрямую из файловой системы.  Основная
@@ -13,136 +15,148 @@
   -->
   <style>
     :root{
-      /* Базовая цветовая палитра.  Все переменные легко
-         перекрашиваются — достаточно сменить значения здесь. */
-      --bg:#1b1e35;
-      --panel:#252b50;
-      --grid-even:#2b2f5e;
-      --grid-odd:#22254a;
-      --border:#2f3464;
-      --highlight:#ffe680;
-      --ink:#e8ebff;
-      --muted:#9aa5d9;
-      --p1:#ff5ca8;
-      --p2:#68c7ff;
-      --radius:0px;
-      --shadow:none;
+      /* Тёплая аркадная палитра — уютные «консольные» тона */
+      --bg:#0f0a14;            /* глубокая слива */
+      --panel:#1a1323;         /* мягкая панель */
+      --panel-2:#23182d;       /* чуть светлее панели для слоёв */
+      --border-dark:#08040a;
+      --border-mid:#3f2a4f;
+      --ink:#fff3e8;           /* тёплый «молочный» */
+      --muted:#c7b8cf;         /* приглушённый подпись */
+      --hl:#ffce6a;            /* янтарный акцент */
+      --accent-pink:#ff7aa9;   /* аркадный розовый */
+      --accent-teal:#6ef0c3;   /* аркадный бирюзовый */
+      --px:1px;
+      --hdr-h:84px;            /* высота шапки — увеличена */
     }
 
     html,body{height:100%;margin:0;color:var(--ink);background:var(--bg);
-      font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+      font-family:'Press Start 2P',ui-monospace,Consolas,"Liberation Mono",monospace;
       overscroll-behavior:none;}
     *{box-sizing:border-box;}
     body{display:flex;flex-direction:column;overflow:hidden;touch-action:manipulation;}
     header,footer{
-      padding:6px 12px;
-      background:var(--panel);
-      border-bottom:1px solid var(--border);
+      padding:14px 16px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05), transparent) 0 0/100% 50%,
+        linear-gradient(180deg, #2a1c39, #1a1323);
+      border-bottom:var(--px) solid var(--border-dark);
+      outline:var(--px) solid var(--border-mid); outline-offset:-1px;
       color:var(--ink);
       display:flex;align-items:center;gap:12px;
     }
-    /* Хедер: слева аватар+ник, центр — заголовок, справа — шестерёнка */
-    header{position:sticky;top:0;z-index:5}
+    header{position:sticky;top:0;z-index:5;min-height:var(--hdr-h)}
+    /* Фоновый пиксель-паттерн без rAF */
+    .pxbg{
+      position:fixed;inset:0;z-index:0;pointer-events:none;
+      background:
+        radial-gradient(#1d2240 1px, transparent 1px) 0 0/6px 6px,
+        radial-gradient(#161b33 1px, transparent 1px) 3px 3px/6px 6px,
+        linear-gradient(#0e1120, #10131c);
+      opacity:.9;
+      animation: twinkle 6s steps(4) infinite;
+    }
+    @keyframes twinkle{
+      0%{filter:brightness(1)}
+      50%{filter:brightness(1.08)}
+      100%{filter:brightness(1)}
+    }
+    /* Верхняя панель: аватар (круг), ник, шестерёнка */
     .hdr-left{display:flex;align-items:center;gap:8px;min-width:0}
     .hdr-grow{flex:1;display:flex;justify-content:center;min-width:0}
-    .hdr-right{display:flex;align-items:center;gap:8px}
+    .hdr-right{display:flex;align-items:center;gap:10px}
     .avatarSmall{
       width:28px;height:28px;image-rendering:pixelated;border-radius:50%;
-      background:#121428;border:1px solid #000;box-shadow:inset 0 0 0 1px #333b77;cursor:pointer;
+      background:#0e1224;border:var(--px) solid var(--border-dark);
+      box-shadow:0 0 0 var(--px) var(--border-mid) inset; cursor:pointer;
     }
-    .nickTop{font-weight:700;color:#e9edff;max-width:40vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    #btnSettings:focus{outline:2px solid var(--highlight);outline-offset:2px}
+    .nickTop{font-weight:700;color:var(--ink);max-width:42vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .title{margin:0;font-size:18px;font-weight:800;letter-spacing:.5px;text-shadow:0 1px 0 #000}
+    #btnBack{display:none}
     canvas.pixel{image-rendering:pixelated}
     .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
-    /* Кнопки с четырьмя состояниями: idle, hover, active, disabled */
-    .btn{
-      --bg1: #222642;
-      --bg2: #191c30;
-      --border1: #2a2e49;
-      --border2: #191c30;
-      --text: #e6ebff;
-      appearance:none;border:0;cursor:pointer;
-      padding:6px 10px;font-weight:700;font-size:12px;
-      color:var(--text);
-      background: linear-gradient(180deg, var(--bg1), var(--bg2));
-      position:relative;
-      min-width:40px;min-height:40px;touch-action:manipulation;
-    }
-    .btn::after{
-      content:""; position:absolute; inset:0;
-      box-shadow: inset 0 0 0 1px var(--border1), inset 0 0 0 2px var(--border2);
-      pointer-events:none;
-    }
-    .btn:hover{filter:brightness(1.2);}
-    .btn:active{transform:translateY(1px);}
-    .btn[disabled]{opacity:.5;cursor:not-allowed;filter:grayscale(.6) saturate(.5);}
-    .btn:focus{outline:2px solid var(--highlight);outline-offset:2px;}
-    .p1{--bg1:#ff6bb5;--bg2:#c43e7a;--text:#fff;}
-    .p2{--bg1:#7ad6ff;--bg2:#2a97d8;--text:#fff;}
-    .ghost{--bg1:#1a1d31;--bg2:#0f1223;--text:#aeb6e9;}
 
-    main{flex:1;display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:12px;padding:12px;align-items:flex-start;}
-    .side{display:grid;gap:12px;max-width:300px;width:100%;}
-    /* большую плашку профиля убираем из колонки — она теперь вверху */
-    .side .avatar{display:none}
-    .center{display:grid;gap:12px;grid-template-rows:1fr;}
+    /* Главная область: убираем левую колонку, всё — единая сцена */
+    main{flex:1;display:block;padding:12px;}
+    .side{display:none !important;}
+    .center{display:block;}
+    /* Контейнер игры — на всю доступную высоту под шапкой */
+    #gameRoot.panel{background:none;border:0;outline:0;padding:0}
+    .gameRoot{position:relative;height:calc(100dvh - var(--hdr-h));min-height:320px;}
     .panel{
-      background:var(--panel);
-      border:1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.03), transparent) 0 0/100% 100%,
+        var(--panel);
+      border:var(--px) solid var(--border-dark);
+      outline:var(--px) solid var(--border-mid); outline-offset:-1px;
       position:relative;
       padding:8px;
     }
-    .panel::before{
-      content:"";position:absolute;inset:1px;border:1px solid rgba(255,255,255,.08);pointer-events:none;
-    }
+    .panel::before{content:"";position:absolute;inset:1px;border:1px solid rgba(255,255,255,.08);pointer-events:none;}
     .avatar{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;}
     .avatar .name{font-weight:700;color:#e9edff;font-size:14px;margin-bottom:4px;}
-    .avatar .stats{font-size:12px;color:var(--muted);}    
+    .avatar .stats{font-size:12px;color:var(--muted);}
     .pixel{image-rendering: pixelated; image-rendering: crisp-edges;}
-    /* Список игр: две большие плитки в ряд, вертикальный скролл */
-    .vlist{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:12px;
-      overflow-y:auto;
-      padding:4px;
-      height:100%;
-    }
-    .vcard{appearance:none;background:none;border:0;padding:0;cursor:pointer;transition:filter .2s;}
-    .vcard:hover{filter:brightness(1.2);}
-    .vcard:focus{outline:2px solid var(--highlight);outline-offset:2px;}
+    /* Список игр: две карточки в ряд, БЕЗ задней панели */
+    .vlist{display:grid;gap:16px;overflow-y:auto;padding:8px;height:calc(100dvh - var(--hdr-h));
+      grid-template-columns:repeat(2,minmax(0,1fr));background:none;border:0;outline:0;}
+    .vcard{appearance:none;background:none;border:0;padding:0;cursor:pointer;transition:filter .15s;}
+    .vcard:hover{filter:brightness(1.08);}
+    .vcard:focus{outline:2px solid var(--hl);outline-offset:2px;}
     .vcard canvas{width:100%;height:auto;aspect-ratio:16/9;image-rendering:pixelated;}
     .gameRoot{height:100%;}
-    .hud{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);}
-    .tag{padding:4px 8px;background:#2b2f5e;border:1px solid #3a3f75;}
-    #hud{position:fixed;bottom:8px;right:8px;pointer-events:none;}
-    #hud *{pointer-events:auto;}
+    /* HUD (FPS/версия) — убран */
+    .hud,.tag,#hud{display:none !important}
+    /* ПИКСЕЛЬНЫЕ КНОПКИ (цвета как в референсе) */
+    .pbtn{
+      display:inline-grid;place-items:center;gap:0;min-height:38px;padding:10px 14px;
+      font:12px/1 'Press Start 2P',ui-monospace,monospace; letter-spacing:1px; text-transform:uppercase;
+      image-rendering:pixelated; cursor:pointer; user-select:none;
+      color:#0b0b0b;
+      border:var(--px) solid var(--border-dark);
+      outline:var(--px) solid var(--border-mid); outline-offset:-1px;
+      box-shadow:0 2px 0 rgba(0,0,0,.5);
+    }
+    .pbtn:active{transform:translateY(1px); filter:brightness(.95)}
+    .pbtn.blue{   background:linear-gradient(#6fbaff,#3f7fd8); box-shadow:inset 0 2px 0 #9dd0ff,inset 0 -2px 0 #193e7a,0 2px 0 rgba(0,0,0,.5);}
+    .pbtn.orange{ background:linear-gradient(#ffb44a,#e0891b); box-shadow:inset 0 2px 0 #ffdca6,inset 0 -2px 0 #7a4a10,0 2px 0 rgba(0,0,0,.5);}
+    .pbtn.purple{ background:linear-gradient(#b48cff,#7c55e6); box-shadow:inset 0 2px 0 #dfcaff,inset 0 -2px 0 #3d1f92,0 2px 0 rgba(0,0,0,.5);}
+    .pbtn.green{  background:linear-gradient(#6efc92,#30c76b); box-shadow:inset 0 2px 0 #b6ffd0,inset 0 -2px 0 #1f7a42,0 2px 0 rgba(0,0,0,.5);}
+    .pbtn.yellow{ background:linear-gradient(#ffe680,#e3b528); box-shadow:inset 0 2px 0 #fff3be,inset 0 -2px 0 #7a6710,0 2px 0 rgba(0,0,0,.5);}
+    .pbtn.red{    background:linear-gradient(#ff6d6d,#d43a3a); box-shadow:inset 0 2px 0 #ffb3b3,inset 0 -2px 0 #7a2020,0 2px 0 rgba(0,0,0,.5);}
+    .pbtn:hover{filter:brightness(1.1); text-shadow:0 1px 0 rgba(0,0,0,.6)}
+    .pbtn:focus{outline:2px solid var(--hl); outline-offset:2px}
+    /* Поля ввода в ретро-стиле */
+    input[type="text"]{
+      font:12px 'Press Start 2P',ui-monospace,monospace; color:var(--ink); background:#0f1224;
+      border:var(--px) solid var(--border-dark); outline:var(--px) solid var(--border-mid); outline-offset:-1px; padding:6px 8px;
+    }
     @media(max-width:860px){
-      main{grid-template-columns:1fr;grid-template-rows:auto auto;max-width:720px;margin:0 auto;}
-      .side{max-width:none;}
-      .center{gap:8px;}
-      /* используем 100dvh, чтобы не «вылазило» за экран на мобилках */
-      .vlist{height:calc(100dvh - 120px);}
+      main{max-width:720px;margin:0 auto;}
+      .center{display:block;}
+      .vlist{height:calc(100dvh - var(--hdr-h));}
     }
     @media(max-width:560px){
       .vlist{grid-template-columns:1fr;}
     }
 
     .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;}
-    .dialog{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);position:relative;min-width:280px;}
+    .dialog{background:var(--panel);border:var(--px) solid var(--border-dark);outline:var(--px) solid var(--border-mid);outline-offset:-1px;padding:16px;position:relative;min-width:280px;}
     .hidden{display:none;}
   </style>
 </head>
 <body>
+  <div class="pxbg" aria-hidden="true"></div>
   <header>
     <div class="hdr-left">
       <canvas id="btnAvatar" class="pixel avatarSmall" width="32" height="32"></canvas>
       <span id="nickTop" class="nickTop">Игрок</span>
     </div>
     <div class="hdr-grow">
-      <h1 style="margin:0;font-size:16px;font-weight:700;letter-spacing:.5px;">DeepFly — мини-игры</h1>
+      <h1 class="title">JustSadSock’s Minigames</h1>
     </div>
     <div class="hdr-right">
+      <button id="btnBack" class="pbtn orange">Menu</button>
       <canvas id="btnSettings" class="pixel" width="32" height="32" style="width:32px;height:32px;"></canvas>
     </div>
   </header>
@@ -156,43 +170,39 @@
             <div class="name" id="playerName">Игрок</div>
             <div class="stats" id="playerStats">готов • ♥ 3 • ★ 0</div>
             <div class="row" style="margin-top:8px">
-              <canvas id="profileSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-              <canvas id="profileReset" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
+              <button id="profileSaveBtn" class="pbtn green">Profile</button>
+              <button id="profileResetBtn" class="pbtn red">Reset</button>
             </div>
           </div>
         </div>
       </section>
       <!-- Центральная колонка: список игр и контейнер игры -->
       <section class="center">
-        <div id="vmenu" class="panel vlist" role="list"></div>
+        <div id="vmenu" class="vlist" role="list"></div>
         <div id="gameRoot" class="panel gameRoot hidden"></div>
       </section>
     </main>
-    <div id="hud" class="panel hud">
-      <span class="tag">v1.0.0</span>
-      <span class="fps" id="fps">FPS –</span>
-    </div>
   <footer>
     <small style="color:var(--muted)">Навигация: выбирайте игру в списке или используйте хэш <code>#game=&lt;slug&gt;</code> в адресной строке.</small>
   </footer>
 
   <div id="settingsDialog" class="backdrop hidden">
     <div id="settingsPanel" class="dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-      <canvas id="settingsClose" class="pixel" width="16" height="16" style="position:absolute;top:8px;right:8px;width:16px;height:16px;"></canvas>
+      <button id="settingsCloseBtn" class="pbtn red" style="position:absolute;top:8px;right:8px;min-height:auto;padding:4px 6px">X</button>
       <h2 id="settingsTitle">Настройки</h2>
       <label><input type="checkbox" id="muteToggle"> Звук</label><br>
       <label><input type="checkbox" id="vfxToggle"> Эффекты</label><br>
       <label><input type="checkbox" id="themeAltToggle"> Альт. тема</label><br>
       <div class="row" style="margin-top:8px;">
-        <canvas id="settingsSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-        <canvas id="settingsCancel" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
+        <button id="settingsSaveBtn" class="pbtn green">Save</button>
+        <button id="settingsCancelBtn" class="pbtn yellow">Cancel</button>
       </div>
     </div>
   </div>
 
   <div id="avatarDialog" class="backdrop hidden">
     <div id="avatarPanel" class="dialog" role="dialog" aria-modal="true" aria-labelledby="avatarTitle">
-      <canvas id="avatarClose" class="pixel" width="16" height="16" style="position:absolute;top:8px;right:8px;width:16px;height:16px;"></canvas>
+      <button id="avatarCloseBtn" class="pbtn red" style="position:absolute;top:8px;right:8px;min-height:auto;padding:4px 6px">X</button>
       <h2 id="avatarTitle">Профиль</h2>
       <input id="nickInput" placeholder="Никнейм" style="font-size:16px;padding:4px;width:100%;margin-bottom:8px;" />
         <canvas id="avatarEdit" class="pixel" width="16" height="16" style="width:96px;height:96px;margin-bottom:8px;"></canvas>
@@ -215,8 +225,8 @@
         </div>
       </div>
       <div class="row" style="margin-top:8px;">
-        <canvas id="avatarSave" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
-        <canvas id="avatarCancel" class="pixel" width="64" height="20" style="width:64px;height:20px;"></canvas>
+        <button id="avatarSaveBtn" class="pbtn green">Save</button>
+        <button id="avatarCancelBtn" class="pbtn yellow">Cancel</button>
       </div>
     </div>
   </div>
@@ -227,10 +237,35 @@
     модули и передаёт им контекст. Каждая игра экспортирует manifest +
     mount/unmount и живёт в каталоге games/<slug>/.
   */
-  const HUB_VERSION = '1.0.0';
+  const HUB_VERSION = '1.0.0'; // не показываем, только в контексте
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+  const btnBack = $('#btnBack');
+  btnBack.addEventListener('click',()=>{ location.hash=''; });
+  btnBack.style.display='none';
+
+  // — Лёгкие SFX (WebAudio) —
+  let AC=null; function ensureAC(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); } }
+  function beep(type='click'){
+    if(!AC) return;
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.type='square';
+    const now=AC.currentTime;
+    const f = type==='hover'? 880 : 660;
+    o.frequency.setValueAtTime(f,now);
+    g.gain.setValueAtTime(0.05,now);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+0.08);
+    o.connect(g); g.connect(AC.destination);
+    o.start(now); o.stop(now+0.09);
+  }
+  addEventListener('pointerdown',()=>ensureAC(),{once:true,passive:true});
+  document.addEventListener('pointerdown',e=>{
+    if(e.target.closest('button,.pbtn,canvas[role="button"]')) beep('click');
+  },{passive:true});
+  document.addEventListener('pointerenter',e=>{
+    if(e.target.closest('button,.pbtn')) beep('hover');
+  },{capture:true,passive:true});
 
   // Универсальная канвас-кнопка
   function makeCanvasButton(canvas, { label, drawIcon, onClick, fontPx=10, width=canvas.width, height=canvas.height }){
@@ -247,7 +282,7 @@
         drawIcon(ctx, st);
       } else {
         ctx.fillStyle = enabled ? '#e6ebff' : '#8c92b8';
-        ctx.font = `${fontPx}px ui-monospace`;
+        ctx.font = `${fontPx}px "Press Start 2P", ui-monospace`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(label, width/2, height/2+1);
       }
@@ -271,15 +306,17 @@
       this.current = name;
       const set=(k,v)=>document.documentElement.style.setProperty(k,v);
       if(name === 'alt'){
-        set('--bg','#21264a'); set('--panel','#2b3270');
-        set('--grid-even','#333a86'); set('--grid-odd','#2a3179');
-        set('--border','#3a4292'); set('--highlight','#ffd5a3');
+        set('--bg','#21264a'); set('--panel','#2b3270'); set('--panel-2','#353c74');
+        set('--border-dark','#0e1129'); set('--border-mid','#3a4292');
+        set('--hl','#ffd5a3');
         set('--ink','#f0f3ff'); set('--muted','#b4bced');
+        set('--accent-pink','#ff5ca8'); set('--accent-teal','#68c7ff');
       } else {
-        set('--bg','#1b1e35'); set('--panel','#252b50');
-        set('--grid-even','#2b2f5e'); set('--grid-odd','#22254a');
-        set('--border','#2f3464'); set('--highlight','#ffe680');
-        set('--ink','#e8ebff'); set('--muted','#9aa5d9');
+        set('--bg','#0f0a14'); set('--panel','#1a1323'); set('--panel-2','#23182d');
+        set('--border-dark','#08040a'); set('--border-mid','#3f2a4f');
+        set('--hl','#ffce6a');
+        set('--ink','#fff3e8'); set('--muted','#c7b8cf');
+        set('--accent-pink','#ff7aa9'); set('--accent-teal','#6ef0c3');
       }
       const meta=document.querySelector('#themeColor');
       if(meta) meta.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--bg').trim());
@@ -455,9 +492,10 @@
     if(!m){
       if(currentGame && currentGame.unmount) currentGame.unmount();
       currentGame = null;
-      gameRoot.classList.add('hidden');
       $('#vmenu').style.display = 'grid';
-      document.querySelectorAll('.side').forEach(el => el.style.display = '');
+      gameRoot.classList.add('hidden');
+      btnBack.style.display='none';
+      gameRoot.innerHTML='';
       return;
     }
     const slug = m[1];
@@ -466,7 +504,11 @@
       if(currentGame && currentGame.unmount) currentGame.unmount();
       $('#vmenu').style.display = 'none';
       gameRoot.classList.remove('hidden');
-      document.querySelectorAll('.side').forEach(el => el.style.display = '');
+      btnBack.style.display='';
+      gameRoot.style.height = `calc(100dvh - var(--hdr-h))`;
+      gameRoot.style.display = 'block';
+      gameRoot.style.padding = '0';
+      gameRoot.style.background = 'transparent';
       currentGame = await mod.mount(gameRoot, getContext());
     }catch(err){
       console.error(err);
@@ -478,17 +520,8 @@
   window.addEventListener('keydown', e => { if(e.key === 'Escape' && location.hash.includes('game=')) location.hash=''; });
   loadFromHash();
 
-  let fpsCounter=0, fpsLast=performance.now();
-  function trackFPS(){
-    const now=performance.now(); fpsCounter++;
-    if(now - fpsLast > 500){
-      $('#fps').textContent = `FPS ${Math.round(fpsCounter*1000/(now-fpsLast))}`;
-      fpsCounter=0; fpsLast=now;
-    }
-    requestAnimationFrame(trackFPS);
-  }
-  trackFPS();
-  
+  // FPS/версия — убраны; никаких фоновых rAF кроме игр и аватара
+
   // Контекст, передаваемый в игры
   function getContext(){
     return {
@@ -527,7 +560,7 @@
     $('#playerName').textContent = profile.nickname;
     avatar1.setParts(profile.avatar);
     const avatarEdit = makeAvatar($('#avatarEdit'), profile.avatar);
-    // маленький аватар в шапке — анимированный
+    // мини-аватар в шапке + ник
     const avatarTop = makeAvatar($('#btnAvatar'), profile.avatar);
     $('#nickTop').textContent = profile.nickname;
 
@@ -538,21 +571,21 @@
       avatarEdit.setParts(profile.avatar);
       avatarDlg = openDialog('#avatarDialog', opener);
     }
-    makeCanvasButton($('#hairPrev'),{label:'◀',onClick(){ profile.avatar.hairStyle = wrap(profile.avatar.hairStyle-1,0,HAIR_STYLES-1); avatarEdit.setParts(profile.avatar); avatarTop.setParts(profile.avatar); }});
+    makeCanvasButton($('#hairPrev'),{label:'◀',onClick(){ profile.avatar.hairStyle = wrap(profile.avatar.hairStyle-1,0,HAIR_STYLES-1); avatarEdit.setParts(profile.avatar); }});
   $('#hairPrev').setAttribute('aria-label','Предыдущая прическа');
-    makeCanvasButton($('#hairNext'),{label:'▶',onClick(){ profile.avatar.hairStyle = wrap(profile.avatar.hairStyle+1,0,HAIR_STYLES-1); avatarEdit.setParts(profile.avatar); avatarTop.setParts(profile.avatar); }});
+    makeCanvasButton($('#hairNext'),{label:'▶',onClick(){ profile.avatar.hairStyle = wrap(profile.avatar.hairStyle+1,0,HAIR_STYLES-1); avatarEdit.setParts(profile.avatar); }});
   $('#hairNext').setAttribute('aria-label','Следующая прическа');
-    makeCanvasButton($('#eyesPrev'),{label:'◀',onClick(){ profile.avatar.eyes = wrap(profile.avatar.eyes-1,0,EYE_STYLES-1); avatarEdit.setParts(profile.avatar); avatarTop.setParts(profile.avatar); }});
+    makeCanvasButton($('#eyesPrev'),{label:'◀',onClick(){ profile.avatar.eyes = wrap(profile.avatar.eyes-1,0,EYE_STYLES-1); avatarEdit.setParts(profile.avatar); }});
   $('#eyesPrev').setAttribute('aria-label','Предыдущие глаза');
-    makeCanvasButton($('#eyesNext'),{label:'▶',onClick(){ profile.avatar.eyes = wrap(profile.avatar.eyes+1,0,EYE_STYLES-1); avatarEdit.setParts(profile.avatar); avatarTop.setParts(profile.avatar); }});
+    makeCanvasButton($('#eyesNext'),{label:'▶',onClick(){ profile.avatar.eyes = wrap(profile.avatar.eyes+1,0,EYE_STYLES-1); avatarEdit.setParts(profile.avatar); }});
   $('#eyesNext').setAttribute('aria-label','Следующие глаза');
-    makeCanvasButton($('#mouthPrev'),{label:'◀',onClick(){ profile.avatar.mouth = wrap(profile.avatar.mouth-1,0,MOUTH_STYLES-1); avatarEdit.setParts(profile.avatar); avatarTop.setParts(profile.avatar); }});
+    makeCanvasButton($('#mouthPrev'),{label:'◀',onClick(){ profile.avatar.mouth = wrap(profile.avatar.mouth-1,0,MOUTH_STYLES-1); avatarEdit.setParts(profile.avatar); }});
   $('#mouthPrev').setAttribute('aria-label','Предыдущий рот');
-    makeCanvasButton($('#mouthNext'),{label:'▶',onClick(){ profile.avatar.mouth = wrap(profile.avatar.mouth+1,0,MOUTH_STYLES-1); avatarEdit.setParts(profile.avatar); avatarTop.setParts(profile.avatar); }});
+    makeCanvasButton($('#mouthNext'),{label:'▶',onClick(){ profile.avatar.mouth = wrap(profile.avatar.mouth+1,0,MOUTH_STYLES-1); avatarEdit.setParts(profile.avatar); }});
   $('#mouthNext').setAttribute('aria-label','Следующий рот');
-    makeCanvasButton($('#colorPrev'),{label:'◀',onClick(){ profile.avatar.hairColor = wrap(profile.avatar.hairColor-1,0,hairPalette.length-1); avatarEdit.setParts(profile.avatar); avatarTop.setParts(profile.avatar); }});
+    makeCanvasButton($('#colorPrev'),{label:'◀',onClick(){ profile.avatar.hairColor = wrap(profile.avatar.hairColor-1,0,hairPalette.length-1); avatarEdit.setParts(profile.avatar); }});
   $('#colorPrev').setAttribute('aria-label','Предыдущий цвет');
-    makeCanvasButton($('#colorNext'),{label:'▶',onClick(){ profile.avatar.hairColor = wrap(profile.avatar.hairColor+1,0,hairPalette.length-1); avatarEdit.setParts(profile.avatar); avatarTop.setParts(profile.avatar); }});
+    makeCanvasButton($('#colorNext'),{label:'▶',onClick(){ profile.avatar.hairColor = wrap(profile.avatar.hairColor+1,0,hairPalette.length-1); avatarEdit.setParts(profile.avatar); }});
   $('#colorNext').setAttribute('aria-label','Следующий цвет');
   function saveProfile(){
       profile.nickname = $('#nickInput').value.trim() || 'Игрок';
@@ -565,18 +598,17 @@
       avatarTop.setParts(profile.avatar);
       $('#nickTop').textContent = profile.nickname;
   }
-  makeCanvasButton($('#profileSave'),{label:'Профиль',onClick(){ openAvatarPanel($('#profileSave')); }});
-  makeCanvasButton($('#avatarSave'),{label:'Сохранить',onClick(){ saveProfile(); avatarDlg && avatarDlg.close(); }});
-  makeCanvasButton($('#avatarCancel'),{label:'Отмена',onClick(){ avatarDlg && avatarDlg.close(); }});
-  makeCanvasButton($('#avatarClose'),{label:'×',onClick(){ avatarDlg && avatarDlg.close(); }});
-  $('#avatarClose').setAttribute('aria-label','Закрыть');
-    makeCanvasButton($('#profileReset'),{label:'Сброс',onClick(){
+  $('#profileSaveBtn').addEventListener('click',()=>openAvatarPanel($('#profileSaveBtn')));
+  $('#profileResetBtn').addEventListener('click',()=>{
       store.del('profile.nickname'); store.del('profile.avatar');
       profile = { id: profile.id, nickname:'Игрок', avatar:{hairStyle:0,eyes:0,mouth:0,hairColor:0} };
       validateAvatar(profile.avatar);
       $('#playerName').textContent = profile.nickname; avatar1.setParts(profile.avatar);
-      avatarTop.setParts(profile.avatar); $('#nickTop').textContent = profile.nickname;
-    }});
+      avatarTop.setParts(profile.avatar); $('#nickTop').textContent='Игрок';
+  });
+  $('#avatarSaveBtn').addEventListener('click',()=>{ saveProfile(); avatarDlg && avatarDlg.close(); });
+  $('#avatarCancelBtn').addEventListener('click',()=>{ avatarDlg && avatarDlg.close(); });
+  $('#avatarCloseBtn').addEventListener('click',()=>{ avatarDlg && avatarDlg.close(); });
 
   // Настройки
   settings.mute = store.get('settings.mute', false);
@@ -587,7 +619,7 @@
   $('#vfxToggle').checked = settings.vfx;
   $('#themeAltToggle').checked = settings.theme==='alt';
   let settingsDlg=null;
-  makeCanvasButton($('#settingsSave'),{label:'Сохранить',onClick(){
+  $('#settingsSaveBtn').addEventListener('click',()=>{
     settings.mute = $('#muteToggle').checked;
     settings.vfx = $('#vfxToggle').checked;
     settings.theme = $('#themeAltToggle').checked ? 'alt' : 'dark';
@@ -596,55 +628,77 @@
     store.set('settings.theme', settings.theme);
     theme.apply(settings.theme);
     settingsDlg && settingsDlg.close();
-  }});
-  makeCanvasButton($('#settingsCancel'),{label:'Отмена',onClick(){ settingsDlg && settingsDlg.close(); }});
-  makeCanvasButton($('#settingsClose'),{label:'×',onClick(){ settingsDlg && settingsDlg.close(); }});
-  $('#settingsClose').setAttribute('aria-label','Закрыть');
+  });
+  $('#settingsCancelBtn').addEventListener('click',()=>{ settingsDlg && settingsDlg.close(); });
+  $('#settingsCloseBtn').addEventListener('click',()=>{ settingsDlg && settingsDlg.close(); });
 
-  // Вертикальное меню игр
+  // Игровые плитки (ретро-карточки, 2-в-ряд), без постоянной анимации
     function drawGameIcon(ctx, slug){
-      const styles=getComputedStyle(document.documentElement);
-      const even=styles.getPropertyValue('--grid-even').trim();
-      const odd=styles.getPropertyValue('--grid-odd').trim();
-      for(let y=0;y<48;y+=6){
-        for(let x=0;x<48;x+=6){ ctx.fillStyle=((x+y)/6%2===0)?odd:even; ctx.fillRect(x,y,6,6); }
-      }
+      ctx.clearRect(0,0,48,48);
       if(slug==='pong'){
-      ctx.fillStyle='#ff77bd'; ctx.fillRect(4,8,6,32);
-      ctx.fillStyle='#68c7ff'; ctx.fillRect(38,8,6,32);
-      ctx.fillStyle='#ffd166'; ctx.fillRect(22,22,4,4);
-    }
-    if(slug==='runner'){
-      ctx.fillStyle='#ff77bd'; ctx.fillRect(16,28,12,16);
-      ctx.fillStyle='#ffd166'; ctx.fillRect(16,20,12,8);
-      ctx.fillStyle='#ff6b6b'; ctx.fillRect(36,18,12,28);
-    }
+        ctx.fillStyle='#ff7aa9'; ctx.fillRect(4,8,6,32);
+        ctx.fillStyle='#6ef0c3'; ctx.fillRect(38,8,6,32);
+        ctx.fillStyle='#ffce6a'; ctx.fillRect(22,22,4,4);
+      } else if(slug==='runner'){
+        ctx.fillStyle='#ff7aa9'; ctx.fillRect(16,28,12,16);
+        ctx.fillStyle='#ffce6a'; ctx.fillRect(16,20,12,8);
+        ctx.fillStyle='#ff6d6d'; ctx.fillRect(36,18,12,28);
+      } else if(slug==='breakout'){
+        ctx.fillStyle='#6ef0c3';
+        for(let y=6;y<=18;y+=6){ for(let x=6;x<=42;x+=6){ ctx.fillRect(x,y,4,4);} }
+        ctx.fillStyle='#ffce6a'; ctx.fillRect(24,28,4,4); // ball
+        ctx.fillStyle='#ff7aa9'; ctx.fillRect(16,36,16,4); // paddle
+      } else if(slug==='rogue'){
+        ctx.fillStyle='#a8a1ff';
+        for(let y=10;y<=34;y+=8){ for(let x=10;x<=34;x+=8){ ctx.fillRect(x,y,6,6);} }
+        ctx.fillStyle='#ffce6a'; ctx.fillRect(24,24,4,4);
+      } else if(slug==='tactics'){
+        ctx.strokeStyle='#ff6d6d'; ctx.strokeRect(28,22,6,6);
+        ctx.strokeStyle='#6ef0c3'; ctx.strokeRect(14,26,6,6);
+      }
   }
   function drawGameTile(ctx,{slug,title,caption,state,pulse=0,scan=0,w,h}){
-    // размеры приходят извне (под размер канваса), по умолчанию 16:9
     w=w||ctx.canvas.width; h=h||ctx.canvas.height;
     const styles=getComputedStyle(document.documentElement);
-    const even=styles.getPropertyValue('--grid-even').trim();
-    const odd=styles.getPropertyValue('--grid-odd').trim();
-    for(let y=0;y<h;y+=8){ for(let x=0;x<w;x+=8){ ctx.fillStyle=((x+y)/8%2===0)?odd:even; ctx.fillRect(x,y,8,8);} }
-    let border = styles.getPropertyValue('--border');
+    // фон карточки — мягкий вертикальный градиент + «сканлайн»
+    const g=ctx.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,'#2b1d37');
+    g.addColorStop(.6,'#1d1427');
+    g.addColorStop(1,'#1a1323');
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle='rgba(255,255,255,.04)';
+    for(let y=2;y<h;y+=3) ctx.fillRect(1,y,w-2,1);
+    let border = getComputedStyle(document.documentElement).getPropertyValue('--border-mid')||'#3a4060';
     if(state===2) border='#ffd166';
     else if(state===1) border=`rgba(255,209,102,${0.4+0.6*pulse})`;
-    ctx.strokeStyle=border; ctx.strokeRect(0.5,0.5,w-1,h-1);
-    ctx.globalAlpha=0.3+0.3*pulse; ctx.strokeStyle=styles.getPropertyValue('--highlight');
-    ctx.strokeRect(2.5,2.5,w-5,h-5); ctx.globalAlpha=1;
-    const sy=Math.floor(scan)%h;
-    ctx.fillStyle='rgba(255,255,255,0.06)';
-    ctx.fillRect(1,sy,w-2,1);
-    // Иконка слева, текст справа. Масштабируемым размером.
-    const pad=12, icon = Math.min( Math.floor(h*0.6), Math.floor(w*0.35) );
-    ctx.save(); ctx.translate(pad,pad);
-    ctx.scale(icon/48, icon/48);
-    drawGameIcon(ctx,slug); ctx.restore();
-    ctx.fillStyle='#e6ebff'; ctx.font=Math.max(14,Math.floor(h*0.12))+'px ui-monospace'; ctx.textBaseline='top';
-    ctx.fillText(title, pad+icon+10, pad+2);
-    ctx.fillStyle=styles.getPropertyValue('--muted'); ctx.font=Math.max(10,Math.floor(h*0.09))+'px ui-monospace';
-    ctx.fillText(caption, pad+icon+10, pad+2+Math.max(14,Math.floor(h*0.12))+6);
+    // двойной пиксельный контур
+    ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--border-dark')||'#000';
+    ctx.strokeRect(0.5,0.5,w-1,h-1);
+    ctx.strokeStyle=border; ctx.strokeRect(1.5,1.5,w-3,h-3);
+    const sy=Math.floor(scan)%h; ctx.fillStyle='rgba(255,255,255,0.06)'; ctx.fillRect(1,sy,w-2,1);
+    // верхняя «наклейка-лейбл» (цвет от слота)
+    const pad=12, icon=Math.min(Math.floor(h*0.6),Math.floor(w*0.35));
+    const labelH=Math.max(16,Math.floor(h*0.22));
+    let label='#ff7aa9';
+    if(slug==='runner') label='#6ef0c3';
+    if(slug==='breakout') label='#ffd36e';
+    if(slug==='rogue') label='#a8a1ff';
+    if(slug==='tactics') label='#ff936a';
+    ctx.fillStyle=label;
+    ctx.fillRect(2,2,w-4,labelH);
+    ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.strokeRect(2.5,2.5,w-5,labelH-1);
+    ctx.fillStyle='rgba(255,255,255,.15)'; ctx.fillRect(3,3,w-6,Math.max(2,Math.floor(labelH*.35)));
+    // Иконка и подписи (пиксель-шрифт, тёплый свет)
+    ctx.save(); ctx.translate(pad,pad); ctx.scale(icon/48,icon/48); drawGameIcon(ctx,slug); ctx.restore();
+    ctx.textBaseline='top';
+    ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=0; ctx.shadowOffsetY=1;
+    ctx.fillStyle=styles.getPropertyValue('--ink')||'#fff3e8';
+    ctx.font=Math.max(12,Math.floor(h*0.13))+'px "Press Start 2P",ui-monospace';
+    ctx.fillText(title.toUpperCase(), pad+icon+10, 6);
+    ctx.fillStyle=styles.getPropertyValue('--muted')||'#a8afd4';
+    ctx.font=Math.max(9,Math.floor(h*0.09))+'px "Press Start 2P",ui-monospace';
+    ctx.fillText(caption, pad+icon+10, 6+Math.max(12,Math.floor(h*0.13))+6);
+    ctx.shadowColor='transparent';
   }
   const GAME_SLUGS = ['pong','runner'];
   function buildVMenu(){
@@ -652,27 +706,21 @@
     GAME_SLUGS.forEach(slug=>{
       const btn=document.createElement('button'); btn.role='listitem'; btn.className='vcard'; btn.tabIndex=0; btn.dataset.slug=slug;
       const cv=document.createElement('canvas'); const dpr=Math.max(1,window.devicePixelRatio||1);
-      cv.className='pixel';
-      cv.style.width='100%'; // ширина задаётся грид-колонкой
-      cv.style.height='';    // задаём ниже по расчёту
-      cv.style.aspectRatio='16 / 9';
+      cv.className='pixel'; cv.style.width='100%'; cv.style.aspectRatio='16/9';
       btn.appendChild(cv);
       menu.appendChild(btn);
       let st=0; let pulseT=0; let raf=null; let title=slug; let caption='';
       const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false;
       function sizeCanvas(){
-        const dw=Math.max(160, Math.floor(cv.clientWidth||menu.clientWidth/2-12));
+        const dw=Math.max(160,Math.floor(cv.clientWidth||menu.clientWidth/2-12));
         const dh=Math.floor(dw*9/16);
-        cv.width=dw*dpr; cv.height=dh*dpr;
-        cv.style.height=dh+'px';
-        ctx.setTransform(dpr,0,0,dpr,0,0);
+        cv.width=dw*dpr; cv.height=dh*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
       }
-      function redraw(){
-        drawGameTile(ctx,{slug,title,caption,state:st,pulse:(Math.sin(pulseT)+1)/2,scan:pulseT,w:cv.width/dpr,h:cv.height/dpr});
-      }
+      function redraw(){ drawGameTile(ctx,{slug,title,caption,state:st,pulse:(Math.sin(pulseT)+1)/2,scan:pulseT,w:cv.width/dpr,h:cv.height/dpr}); }
       function step(){ if(st===1){ pulseT+=0.1; redraw(); raf=requestAnimationFrame(step);} }
       sizeCanvas(); redraw();
-      window.addEventListener('resize',()=>{ sizeCanvas(); redraw(); }, {passive:true});
+      (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(()=>{ sizeCanvas(); redraw(); });
+      addEventListener('resize',()=>{ sizeCanvas(); redraw(); },{passive:true});
       btn.addEventListener('pointerenter',()=>{st=1; pulseT=0; redraw(); step();});
       btn.addEventListener('pointerleave',()=>{st=0; redraw(); cancelAnimationFrame(raf);});
       btn.addEventListener('pointerdown',e=>{e.preventDefault();st=2;redraw();});
@@ -703,14 +751,15 @@
   function drawGear(ctx,state=0){
     ctx.clearRect(0,0,32,32);
     const cx=16, cy=16;
-    // зубья
     ctx.save(); ctx.translate(cx,cy);
-    for(let i=0;i<8;i++){ ctx.rotate(Math.PI/4); ctx.fillStyle='#e6ebff'; ctx.fillRect(10,-2,8,4); }
+    for(let i=0;i<8;i++){ ctx.rotate(Math.PI/4); ctx.fillStyle=state? '#ffce6a':'#fff3e8'; ctx.fillRect(10,-2,8,4); }
     ctx.restore();
-    // корпус с отверстием
     ctx.beginPath(); ctx.arc(cx,cy,10,0,Math.PI*2); ctx.arc(cx,cy,5,0,Math.PI*2,true);
-    ctx.fillStyle='#e6ebff'; ctx.fill('evenodd');
-    if(state>0){ ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--highlight'); ctx.lineWidth=1; ctx.strokeRect(1.5,1.5,29,29); }
+    ctx.fillStyle=state? '#ffce6a':'#fff3e8'; ctx.fill('evenodd');
+    if(state>0){
+      ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--hl')||'#ffe680';
+      ctx.lineWidth=1; ctx.strokeRect(1.5,1.5,29,29);
+    }
   }
   makeCanvasButton($('#btnSettings'),{
     drawIcon:drawGear,
@@ -723,9 +772,15 @@
     width:32,height:32
   });
   $('#btnSettings').setAttribute('aria-label','Настройки');
-  // Аватар в шапке открывает профиль (кнопка без состояний)
+  // Аватар в шапке: открывает профиль и живо обновляется
   $('#btnAvatar').addEventListener('click',()=>openAvatarPanel($('#btnAvatar')));
   $('#btnAvatar').setAttribute('aria-label','Профиль');
+  // при изменениях в редакторе — сразу отражаем в шапке
+  ['hairPrev','hairNext','eyesPrev','eyesNext','mouthPrev','mouthNext','colorPrev','colorNext']
+    .forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.addEventListener('click',()=>{ avatarTop.setParts(profile.avatar); $('#nickTop').textContent = profile.nickname; },{passive:true});
+    });
 
   </script>
 </body>
