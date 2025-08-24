@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#10131c" id="themeColor">
   <title>JustSadSock’s Minigames</title>
+  <!-- pixel font (легковесное подключение, без локальных файлов) -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <!--
     Это стартовая страница игрового хаба.  Она не требует сборки или внешних
     библиотек и может быть открыта напрямую из файловой системы.  Основная
@@ -13,7 +15,7 @@
   -->
   <style>
     :root{
-      /* Ретро-палитра без анимаций (дёшево для FPS) */
+      /* Ретро-палитра: тёмный фон, холодные панели, тёплый хайлайт */
       --bg:#10131c;
       --panel:#171b2a;
       --panel-2:#1f2540;
@@ -28,7 +30,7 @@
     }
 
     html,body{height:100%;margin:0;color:var(--ink);background:var(--bg);
-      font-family:ui-monospace,"Cascadia Mono","Fira Code",Consolas,monospace;
+      font-family:'Press Start 2P',ui-monospace,Consolas,"Liberation Mono",monospace;
       overscroll-behavior:none;}
     *{box-sizing:border-box;}
     body{display:flex;flex-direction:column;overflow:hidden;touch-action:manipulation;}
@@ -52,35 +54,8 @@
     }
     .nickTop{font-weight:700;color:var(--ink);max-width:42vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .title{margin:0;font-size:16px;font-weight:800;letter-spacing:.5px;text-shadow:0 1px 0 #000}
-    #btnSettings:focus{outline:2px solid var(--hl);outline-offset:2px}
     canvas.pixel{image-rendering:pixelated}
     .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
-    /* Кнопки с четырьмя состояниями: idle, hover, active, disabled */
-    .btn{
-      --bg1: #222642;
-      --bg2: #191c30;
-      --border1: #2a2e49;
-      --border2: #191c30;
-      --text: #e6ebff;
-      appearance:none;border:0;cursor:pointer;
-      padding:6px 10px;font-weight:700;font-size:12px;
-      color:var(--text);
-      background: linear-gradient(180deg, var(--bg1), var(--bg2));
-      position:relative;
-      min-width:40px;min-height:40px;touch-action:manipulation;
-    }
-    .btn::after{
-      content:""; position:absolute; inset:0;
-      box-shadow: inset 0 0 0 1px var(--border1), inset 0 0 0 2px var(--border2);
-      pointer-events:none;
-    }
-    .btn:hover{filter:brightness(1.2);}
-    .btn:active{transform:translateY(1px);}
-    .btn[disabled]{opacity:.5;cursor:not-allowed;filter:grayscale(.6) saturate(.5);}
-    .btn:focus{outline:2px solid var(--hl);outline-offset:2px;}
-    .p1{--bg1:#ff6bb5;--bg2:#c43e7a;--text:#fff;}
-    .p2{--bg1:#7ad6ff;--bg2:#2a97d8;--text:#fff;}
-    .ghost{--bg1:#1a1d31;--bg2:#0f1223;--text:#aeb6e9;}
 
     main{flex:1;display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:12px;padding:12px;align-items:flex-start;}
     .side{display:grid;gap:12px;max-width:300px;width:100%;}
@@ -116,6 +91,23 @@
     .gameRoot{height:100%;}
     /* HUD (FPS/версия) — удалён */
     .hud,.tag,#hud{display:none !important}
+    /* ПИКСЕЛЬНЫЕ КНОПКИ (цвета как в референсе) */
+    .pbtn{
+      display:inline-grid;place-items:center;gap:0;min-height:38px;padding:10px 14px;
+      font:12px/1 'Press Start 2P',ui-monospace,monospace; letter-spacing:1px; text-transform:uppercase;
+      image-rendering:pixelated; cursor:pointer; user-select:none;
+      color:#0b0b0b;
+      border:var(--px) solid var(--border-dark);
+      outline:var(--px) solid var(--border-mid); outline-offset:-1px;
+      box-shadow:0 2px 0 rgba(0,0,0,.5);
+    }
+    .pbtn:active{transform:translateY(1px); filter:brightness(.95)}
+    .pbtn.blue{   background:linear-gradient(#6fbaff,#3f7fd8); box-shadow:inset 0 2px 0 #9dd0ff,inset 0 -2px 0 #193e7a,0 2px 0 rgba(0,0,0,.5);}
+    .pbtn.orange{ background:linear-gradient(#ffb44a,#e0891b); box-shadow:inset 0 2px 0 #ffdca6,inset 0 -2px 0 #7a4a10,0 2px 0 rgba(0,0,0,.5);}
+    .pbtn.purple{ background:linear-gradient(#b48cff,#7c55e6); box-shadow:inset 0 2px 0 #dfcaff,inset 0 -2px 0 #3d1f92,0 2px 0 rgba(0,0,0,.5);}
+    .pbtn.green{  background:linear-gradient(#6efc92,#30c76b); box-shadow:inset 0 2px 0 #b6ffd0,inset 0 -2px 0 #1f7a42,0 2px 0 rgba(0,0,0,.5);}
+    .pbtn.yellow{ background:linear-gradient(#ffe680,#e3b528); box-shadow:inset 0 2px 0 #fff3be,inset 0 -2px 0 #7a6710,0 2px 0 rgba(0,0,0,.5);}
+    .pbtn.red{    background:linear-gradient(#ff6d6d,#d43a3a); box-shadow:inset 0 2px 0 #ffb3b3,inset 0 -2px 0 #7a2020,0 2px 0 rgba(0,0,0,.5);}
     @media(max-width:860px){
       main{grid-template-columns:1fr;grid-template-rows:auto auto;max-width:720px;margin:0 auto;}
       .side{max-width:none;}
@@ -221,7 +213,7 @@
     модули и передаёт им контекст. Каждая игра экспортирует manifest +
     mount/unmount и живёт в каталоге games/<slug>/.
   */
-  const HUB_VERSION = '1.0.0'; // оставим для контекста, но не показываем
+  const HUB_VERSION = '1.0.0'; // не показываем, только в контексте
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -241,7 +233,7 @@
         drawIcon(ctx, st);
       } else {
         ctx.fillStyle = enabled ? '#e6ebff' : '#8c92b8';
-        ctx.font = `${fontPx}px ui-monospace`;
+        ctx.font = `${fontPx}px "Press Start 2P", ui-monospace`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(label, width/2, height/2+1);
       }
@@ -515,7 +507,8 @@
     avatar1.setParts(profile.avatar);
     const avatarEdit = makeAvatar($('#avatarEdit'), profile.avatar);
     // мини-аватар в шапке + ник
-    const avatarTop = makeAvatar($('#btnAvatar'), profile.avatar);
+    const avatarTop = makeAvatar($('#btnAvatar'), {hairStyle:0,eyes:0,mouth:0,hairColor:0});
+    avatarTop.setParts(profile.avatar);
     $('#nickTop').textContent = profile.nickname;
 
     let avatarDlg=null;
@@ -626,9 +619,9 @@
     const pad=12, icon=Math.min(Math.floor(h*0.6),Math.floor(w*0.35));
     ctx.save(); ctx.translate(pad,pad); ctx.scale(icon/48,icon/48); drawGameIcon(ctx,slug); ctx.restore();
     ctx.fillStyle=styles.getPropertyValue('--ink')||'#e9ecff'; ctx.textBaseline='top';
-    ctx.font=Math.max(14,Math.floor(h*0.12))+'px ui-monospace'; ctx.fillText(title,pad+icon+10,pad+2);
+    ctx.font=Math.max(12,Math.floor(h*0.12))+'px "Press Start 2P",ui-monospace'; ctx.fillText(title.toUpperCase(),pad+icon+10,pad+2);
     ctx.fillStyle=styles.getPropertyValue('--muted')||'#a8afd4';
-    ctx.font=Math.max(10,Math.floor(h*0.09))+'px ui-monospace'; ctx.fillText(caption,pad+icon+10,pad+2+Math.max(14,Math.floor(h*0.12))+6);
+    ctx.font=Math.max(9,Math.floor(h*0.09))+'px "Press Start 2P",ui-monospace'; ctx.fillText(caption,pad+icon+10,pad+2+Math.max(12,Math.floor(h*0.12))+6);
   }
   const GAME_SLUGS = ['pong','runner'];
   function buildVMenu(){
@@ -649,7 +642,8 @@
       function redraw(){ drawGameTile(ctx,{slug,title,caption,state:st,pulse:(Math.sin(pulseT)+1)/2,scan:pulseT,w:cv.width/dpr,h:cv.height/dpr}); }
       function step(){ if(st===1){ pulseT+=0.1; redraw(); raf=requestAnimationFrame(step);} }
       sizeCanvas(); redraw();
-      window.addEventListener('resize',()=>{ sizeCanvas(); redraw(); },{passive:true});
+      (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(()=>{ sizeCanvas(); redraw(); });
+      addEventListener('resize',()=>{ sizeCanvas(); redraw(); },{passive:true});
       btn.addEventListener('pointerenter',()=>{st=1; pulseT=0; redraw(); step();});
       btn.addEventListener('pointerleave',()=>{st=0; redraw(); cancelAnimationFrame(raf);});
       btn.addEventListener('pointerdown',e=>{e.preventDefault();st=2;redraw();});
